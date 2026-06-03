@@ -1,0 +1,33 @@
+{
+  "name": "rocket-replay-parser",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node src/pipeline/index.js",
+    "server": "node server.js",
+    "analyze": "node src/pipeline/analyzeReplay.js",
+    "post": "node src/pipeline/postToDiscord.js",
+    "watch": "node src/pipeline/watchReplays.js",
+    "seed": "node src/pipeline/seedReplays.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "type": "module",
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.8.0",
+    "@prisma/client": "^7.8.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "multer": "^2.1.1",
+    "ollama": "^0.6.3",
+    "pg": "^8.21.0",
+    "sharp": "^0.34.5"
+  },
+  "devDependencies": {
+    "prisma": "^7.8.0"
+  }
+}

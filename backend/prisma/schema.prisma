@@ -1,0 +1,287 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Player {
+  id          Int      @id @default(autoincrement())
+  playerName  String   @unique
+  platform    String?
+  onlineId    String?
+  isBot       Boolean  @default(false)
+  firstSeenAt DateTime @default(now())
+
+  matchPlayers   MatchPlayer[]
+  timelineEvents TimelineEvent[]
+  victimEvents   TimelineEvent[] @relation("EventVictim")
+
+  @@map("players")
+}
+
+model Replay {
+  replayId           String  @id
+  fileName           String
+  replayName         String?
+  mapName            String
+  matchType          String?
+  teamSize           Int
+  unfairTeamSize     Boolean @default(false)
+  serverRegion       String?
+  playlist           Int?
+  overtime           Boolean @default(false)
+  forfeit            Boolean @default(false)
+  totalSecondsPlayed Float?
+  matchStartEpoch    BigInt?
+  date               String?
+  recorderName       String?
+  winningTeam        Int?
+  team0Score         Int     @default(0)
+  team1Score         Int     @default(0)
+
+  matchPlayers   MatchPlayer[]
+  ballStats      BallStats?
+  timelineEvents TimelineEvent[]
+  highlights     Highlight[]
+  heatmaps       Heatmap[]
+
+  @@map("replays")
+}
+
+model MatchPlayer {
+  id        Int    @id @default(autoincrement())
+  playerId  Int
+  replayId  String
+  team      Int
+
+  score              Int   @default(0)
+  goals              Int   @default(0)
+  shots              Int   @default(0)
+  assists            Int   @default(0)
+  saves              Int   @default(0)
+  shootingPercentage Float @default(0)
+  kills              Int   @default(0)
+  deaths             Int   @default(0)
+
+  boostUsed                Float?
+  bpm                      Float?
+  averageBoost             Float?
+  boostCollectedApprox     Float?
+  zeroBoostSeconds         Float?
+  fullBoostSeconds         Float?
+  boost0To25Seconds        Float?
+  boost25To50Seconds       Float?
+  boost50To75Seconds       Float?
+  boost75To100Seconds      Float?
+  boost0To25Pct            Float?
+  boost25To50Pct           Float?
+  boost50To75Pct           Float?
+  boost75To100Pct          Float?
+  boostUsedWhileSupersonic Float?
+
+  pickups                   Int   @default(0)
+  bigPads                   Int   @default(0)
+  smallPads                 Int   @default(0)
+  unknownPads               Int   @default(0)
+  boostStolen               Int   @default(0)
+  actualPickupGain          Float?
+  theoreticalPickupEstimate Float?
+
+  maxSpeedUU        Float?
+  avgSpeedUU        Float?
+  supersonicSeconds Float?
+  supersonicPct     Float?
+  airborneSeconds   Float?
+  airbornePct       Float?
+  avgThrottle       Float?
+  handbrakeUsagePct Float?
+
+  airRolls          Int?
+  dodgeCount        Int?
+  doubleJumps       Int?
+  dodgesRefreshed   Int?
+  avgSteerDeviation Float?
+
+  avgPing         Float?
+  maxPing         Int?
+  worstNetQuality Int?
+
+  titleId             Int?
+  totalGameTimePlayed Int?
+  priActorId          Int?
+  partyLeaderId       String?
+
+  player          Player                 @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  replay          Replay                 @relation(fields: [replayId], references: [replayId], onDelete: Cascade)
+  camera          CameraSettings?
+  loadout         Loadout?
+  boostPickups    BoostPickup[]
+  positionSamples PlayerPositionSample[]
+
+  @@unique([replayId, playerId])
+  @@map("match_players")
+}
+
+model CameraSettings {
+  id            Int    @id @default(autoincrement())
+  matchPlayerId Int    @unique
+  fov           Float?
+  height        Float?
+  angle         Float?
+  distance      Float?
+  stiffness     Float?
+  swivel        Float?
+
+  matchPlayer MatchPlayer @relation(fields: [matchPlayerId], references: [id], onDelete: Cascade)
+
+  @@map("camera_settings")
+}
+
+model Loadout {
+  id            Int   @id @default(autoincrement())
+  matchPlayerId Int   @unique
+  body          Int?
+  decal         Int?
+  wheels        Int?
+  rocketTrail   Int?
+  antenna       Int?
+  topper        Int?
+  goalExplosion Int?
+  onlineLoadout Json?
+
+  matchPlayer MatchPlayer @relation(fields: [matchPlayerId], references: [id], onDelete: Cascade)
+
+  @@map("loadouts")
+}
+
+model BallStats {
+  id                     Int    @id @default(autoincrement())
+  replayId               String @unique
+  team0PossessionSeconds Float?
+  team1PossessionSeconds Float?
+  team0PossessionPct     Float?
+  team1PossessionPct     Float?
+  maxSpeedUU             Float?
+  avgSpeedUU             Float?
+  speedSampleCount       Int?
+  aerialSamples          Int?
+  totalSamples           Int?
+  aerialPct              Float?
+
+  replay Replay @relation(fields: [replayId], references: [replayId], onDelete: Cascade)
+
+  @@map("ball_stats")
+}
+
+model TimelineEvent {
+  id                      Int     @id @default(autoincrement())
+  replayId                String
+  eventId                 String
+  type                    String
+  frameIndex              Int
+  replayTimeSeconds       Float
+  elapsedSeconds          Float?
+  elapsedClock            String?
+  gameSecondsRemaining    Int?
+  gameClockElapsed        String?
+  gameClockElapsedSeconds Int?
+  source                  String?
+  playerName              String
+  playerId                Int?
+  team                    Int?
+  counterValue            Int?
+  victimPlayerName        String?
+  victimPlayerId          Int?
+  victimTeam              Int?
+  killerPlayerName        String?
+  scoreAfterTeam0         Int?
+  scoreAfterTeam1         Int?
+  timelineElapsedSeconds  Float?
+
+  replay Replay  @relation(fields: [replayId], references: [replayId], onDelete: Cascade)
+  player Player? @relation(fields: [playerId], references: [id], onDelete: SetNull)
+  victim Player? @relation("EventVictim", fields: [victimPlayerId], references: [id], onDelete: SetNull)
+
+  @@unique([replayId, eventId])
+  @@map("timeline_events")
+}
+
+model Highlight {
+  id            Int     @id @default(autoincrement())
+  replayId      String
+  frame         Int?
+  carName       String?
+  ballName      String?
+  goalActorName String?
+
+  replay Replay @relation(fields: [replayId], references: [replayId], onDelete: Cascade)
+
+  @@map("highlights")
+}
+
+model BoostPickup {
+  id                 Int     @id @default(autoincrement())
+  matchPlayerId      Int
+  replayId           String
+  frameIndex         Int
+  time               Float
+  padType            String
+  isStolen           Boolean @default(false)
+  estimatedBoostGain Float?
+  x                  Float?
+  y                  Float?
+  z                  Float?
+
+  matchPlayer MatchPlayer @relation(fields: [matchPlayerId], references: [id], onDelete: Cascade)
+
+  @@index([replayId])
+  @@index([matchPlayerId])
+  @@map("boost_pickups")
+}
+
+model PlayerPositionSample {
+  id             Int    @id @default(autoincrement())
+  matchPlayerId  Int
+  replayId       String
+  frameIndex     Int
+  time           Float
+  elapsedSeconds Float?
+  x              Float
+  y              Float
+  z              Float
+  qx             Float?
+  qy             Float?
+  qz             Float?
+  qw             Float?
+  vx             Float?
+  vy             Float?
+  vz             Float?
+  boostAmount    Float?
+  throttle       Float?
+
+  matchPlayer MatchPlayer @relation(fields: [matchPlayerId], references: [id], onDelete: Cascade)
+
+  @@index([matchPlayerId])
+  @@index([replayId])
+  @@map("player_position_samples")
+}
+
+model Heatmap {
+  id            Int     @id @default(autoincrement())
+  replayId      String
+  playerName    String
+  team          Int?
+  priActorId    Int?
+  sampleCount   Int?
+  inBoundsCount Int?
+  skippedCount  Int?
+  filename      String?
+  filePath      String?
+
+  replay Replay @relation(fields: [replayId], references: [replayId], onDelete: Cascade)
+
+  @@unique([replayId, playerName])
+  @@map("heatmaps")
+}

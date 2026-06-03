@@ -1,0 +1,10 @@
+.env
+output/processed-replays.json
+
+/generated/prisma
+
+/node_modules
+
+/replays
+
+/output
