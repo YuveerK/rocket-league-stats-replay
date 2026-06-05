@@ -13,7 +13,10 @@ export async function careerStats(req, res, next) {
     const playerName = req.query.player;
     if (!playerName) return res.status(400).json({ error: "player query param required" });
 
-    const data = await getCareerStats(playerName);
+    const data = await getCareerStats(playerName, {
+      playlist: req.query.playlist,
+      mapName: req.query.map,
+    });
     if (!data) return res.status(404).json({ error: `No replays found for player "${playerName}"` });
 
     res.json(data);

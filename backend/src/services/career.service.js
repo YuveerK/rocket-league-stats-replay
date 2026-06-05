@@ -8,7 +8,72 @@ export async function getAllPlayers() {
   });
 }
 
-export async function getCareerStats(playerName) {
+function mapCareerMatch(mp) {
+  const r = mp.replay;
+  const result =
+    r.winningTeam === null ? "draw"
+    : r.winningTeam === mp.team ? "win"
+    : "loss";
+
+  return {
+    replayId: r.replayId,
+    fileName: r.fileName,
+    date: r.date,
+    mapName: r.mapName,
+    overtime: r.overtime,
+    forfeit: r.forfeit,
+    playlist: r.playlist,
+    totalSecondsPlayed: r.totalSecondsPlayed,
+    myTeam: mp.team,
+    team0Score: r.team0Score,
+    team1Score: r.team1Score,
+    result,
+    score: mp.score,
+    goals: mp.goals,
+    assists: mp.assists,
+    saves: mp.saves,
+    shots: mp.shots,
+    shootingPercentage: mp.shootingPercentage,
+    kills: mp.kills,
+    deaths: mp.deaths,
+    netDemos: (mp.kills ?? 0) - (mp.deaths ?? 0),
+    boostUsed: mp.boostUsed,
+    boostCollectedApprox: mp.boostCollectedApprox,
+    bpm: mp.bpm,
+    averageBoost: mp.averageBoost,
+    pickups: mp.pickups,
+    bigPads: mp.bigPads,
+    smallPads: mp.smallPads,
+    unknownPads: mp.unknownPads,
+    boostStolen: mp.boostStolen,
+    supersonicPct: mp.supersonicPct,
+    airbornePct: mp.airbornePct,
+  };
+}
+
+function buildPlaylistStats(matches) {
+  const byPlaylist = new Map();
+  for (const m of matches) {
+    const key = m.playlist ?? "unknown";
+    if (!byPlaylist.has(key)) {
+      byPlaylist.set(key, { playlist: key, matches: 0, wins: 0, losses: 0 });
+    }
+    const row = byPlaylist.get(key);
+    row.matches++;
+    if (m.result === "win") row.wins++;
+    if (m.result === "loss") row.losses++;
+  }
+  return [...byPlaylist.values()]
+    .map((row) => ({
+      ...row,
+      winRate: row.matches ? Math.round((row.wins / row.matches) * 100) : 0,
+    }))
+    .sort((a, b) => b.matches - a.matches);
+}
+
+export async function getCareerStats(playerName, filters = {}) {
+  const { playlist, mapName } = filters;
+
   const matchPlayers = await prisma.matchPlayer.findMany({
     where: { player: { playerName } },
     include: {
@@ -33,41 +98,42 @@ export async function getCareerStats(playerName) {
 
   if (!matchPlayers.length) return null;
 
-  const matches = matchPlayers.map((mp) => {
-    const r = mp.replay;
-    const result =
-      r.winningTeam === null ? "draw"
-      : r.winningTeam === mp.team ? "win"
-      : "loss";
+  let matches = matchPlayers.map(mapCareerMatch);
 
+  if (playlist != null && playlist !== "" && playlist !== "all") {
+    const playlistId = Number(playlist);
+    matches = matches.filter((m) => m.playlist === playlistId);
+  }
+  if (mapName != null && mapName !== "" && mapName !== "all") {
+    matches = matches.filter((m) => m.mapName === mapName);
+  }
+
+  const filterOptions = {
+    playlists: [...new Set(matchPlayers.map((mp) => mp.replay.playlist).filter((p) => p != null))].sort(
+      (a, b) => a - b,
+    ),
+    maps: [...new Set(matchPlayers.map((mp) => mp.replay.mapName).filter(Boolean))].sort(),
+  };
+
+  if (!matches.length) {
     return {
-      replayId: r.replayId,
-      fileName: r.fileName,
-      date: r.date,
-      mapName: r.mapName,
-      overtime: r.overtime,
-      forfeit: r.forfeit,
-      playlist: r.playlist,
-      totalSecondsPlayed: r.totalSecondsPlayed,
-      myTeam: mp.team,
-      team0Score: r.team0Score,
-      team1Score: r.team1Score,
-      result,
-      score: mp.score,
-      goals: mp.goals,
-      assists: mp.assists,
-      saves: mp.saves,
-      shots: mp.shots,
-      shootingPercentage: mp.shootingPercentage,
-      kills: mp.kills,
-      deaths: mp.deaths,
-      boostUsed: mp.boostUsed,
-      bpm: mp.bpm,
-      averageBoost: mp.averageBoost,
-      supersonicPct: mp.supersonicPct,
-      airbornePct: mp.airbornePct,
+      playerName,
+      filters: { playlist: playlist ?? "all", mapName: mapName ?? "all" },
+      filterOptions,
+      summary: {
+        totalMatches: 0,
+        wins: 0,
+        losses: 0,
+        draws: 0,
+        winRate: 0,
+      },
+      matches: [],
+      mapStats: [],
+      playlistStats: [],
+      trend: [],
+      boostTrend: [],
     };
-  });
+  }
 
   const total = matches.length;
   const wins = matches.filter((m) => m.result === "win").length;
@@ -94,6 +160,14 @@ export async function getCareerStats(playerName) {
     totalShots: sum("shots"),
     totalScore: sum("score"),
     totalKills: sum("kills"),
+    totalDeaths: sum("deaths"),
+    netDemos: sum("kills") - sum("deaths"),
+    totalBoostUsed: +sum("boostUsed").toFixed(1),
+    totalBoostCollected: +sum("boostCollectedApprox").toFixed(1),
+    totalPickups: sum("pickups"),
+    totalBigPads: sum("bigPads"),
+    totalSmallPads: sum("smallPads"),
+    totalBoostStolen: sum("boostStolen"),
     avgGoals: +avg("goals").toFixed(2),
     avgAssists: +avg("assists").toFixed(2),
     avgSaves: +avg("saves").toFixed(2),
@@ -104,6 +178,13 @@ export async function getCareerStats(playerName) {
     avgBoost: +avg("averageBoost").toFixed(1),
     avgSupersonicPct: +avg("supersonicPct").toFixed(1),
     avgAirbornePct: +avg("airbornePct").toFixed(1),
+    avgBoostUsed: +avg("boostUsed").toFixed(1),
+    avgBoostCollected: +avg("boostCollectedApprox").toFixed(1),
+    avgPickups: +avg("pickups").toFixed(1),
+    avgBigPads: +avg("bigPads").toFixed(1),
+    avgSmallPads: +avg("smallPads").toFixed(1),
+    avgBoostStolen: +avg("boostStolen").toFixed(1),
+    avgNetDemos: +(avg("kills") - avg("deaths")).toFixed(2),
   };
 
   // Per-map breakdown
@@ -140,11 +221,33 @@ export async function getCareerStats(playerName) {
       saves: m.saves,
       score: m.score,
       shootingPct: m.shootingPercentage,
+      bigPads: m.bigPads,
+      smallPads: m.smallPads,
+      boostUsed: m.boostUsed,
+      netDemos: m.netDemos,
       winRate: +((cumulativeWins / (i + 1)) * 100).toFixed(1),
     };
   });
 
-  return { playerName, summary, matches: [...matches].reverse(), mapStats, trend };
+  const boostTrend = matches.map((m, i) => ({
+    index: i + 1,
+    date: m.date,
+    boostUsed: m.boostUsed ?? 0,
+    boostCollected: m.boostCollectedApprox ?? 0,
+    pickups: (m.bigPads ?? 0) + (m.smallPads ?? 0),
+  }));
+
+  return {
+    playerName,
+    filters: { playlist: playlist ?? "all", mapName: mapName ?? "all" },
+    filterOptions,
+    summary,
+    matches: [...matches].reverse(),
+    mapStats,
+    playlistStats: buildPlaylistStats(matches),
+    trend,
+    boostTrend: [...boostTrend].reverse(),
+  };
 }
 
 function blankPeer(other, relation) {
