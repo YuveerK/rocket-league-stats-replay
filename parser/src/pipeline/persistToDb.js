@@ -20,7 +20,6 @@ const ARTIFACT_KEYS = [
   "player-mapping.json",
   "advanced-player-stats.json",
   "match-meta.json",
-  "heatmaps/heatmap-manifest.json",
 ];
 
 async function readJsonOptional(filePath) {
@@ -130,7 +129,6 @@ async function main() {
   const timeline = artifacts["game-timeline.json"];
   const boostPickupsData = artifacts["boost-pickup-stats-v2.json"];
   const positionData = artifacts["player-position-timeline.json"];
-  const heatmapManifest = artifacts["heatmaps/heatmap-manifest.json"];
 
   if (!finalStats) {
     throw new Error("final-player-stats.json not found - cannot persist to DB");
@@ -235,7 +233,6 @@ async function main() {
   await prisma.highlight.deleteMany({ where: { replayId } });
   await prisma.boostPickup.deleteMany({ where: { replayId } });
   await prisma.playerPositionSample.deleteMany({ where: { replayId } });
-  await prisma.heatmap.deleteMany({ where: { replayId } });
   await prisma.ballStats.deleteMany({ where: { replayId } });
   await prisma.matchPlayer.deleteMany({ where: { replayId } });
 
@@ -380,22 +377,6 @@ async function main() {
       throttle: s.throttle != null ? s.throttle : null,
     }));
     await batchCreateMany(prisma.playerPositionSample, rows);
-  }
-
-  for (const h of heatmapManifest?.heatmaps ?? []) {
-    await prisma.heatmap.create({
-      data: {
-        replayId,
-        playerName: h.playerName,
-        team: h.team ?? null,
-        priActorId: h.priActorId ?? null,
-        sampleCount: h.sampleCount ?? null,
-        inBoundsCount: h.inBoundsCount ?? null,
-        skippedCount: h.skippedCount ?? null,
-        filename: h.filename ?? null,
-        filePath: h.path ?? null,
-      },
-    });
   }
 
   await upsertReplayArtifacts(replayId, artifacts);

@@ -14,7 +14,6 @@ const FINAL_STATS_PATH = path.join(OUTPUT_DIR, "final-player-stats.json");
 const ANALYSIS_STEPS = [
   "src/pipeline/buildPlayerMapping.js",
   "src/pipeline/extractPlayerPositions.js",
-  "src/pipeline/generateHeatmaps.js",
   "src/pipeline/extractBoostStatsV2.js",
   "src/pipeline/extractBoostPickupStats.js",
   "src/pipeline/refineBoostPickupStatsV2.js",
