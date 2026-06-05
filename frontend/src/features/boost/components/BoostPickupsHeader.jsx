@@ -16,7 +16,7 @@ const FILTERS = [
 ]
 
 export function BoostPickupsHeader({ meta, metrics, filter, onFilterChange, onUpload }) {
-  const { totalEvents, totalBig, totalStolen, topCollector, topStealer } = metrics
+  const { totalEvents, totalBig, totalSmall, totalStolen, topCollector, topStealer } = metrics
 
   return (
     <PageHeader
@@ -30,7 +30,8 @@ export function BoostPickupsHeader({ meta, metrics, filter, onFilterChange, onUp
     >
       <div className="grid grid-cols-1 gap-3 md:grid-cols-5">
         <HeroMetric label="Pickup Events"  value={fmt(totalEvents)}                        detail="Total across all players"          color={BLUE}                       Icon={Database}        />
-        <HeroMetric label="Big Pads"       value={fmt(totalBig)}                           detail="Large boost pad pickups"           color={BLUE}                       Icon={BatteryCharging} />
+        <HeroMetric label="Big Pads"       value={fmt(totalBig)}                           detail="Large boost pad pickups (count)"   color={BLUE}                       Icon={BatteryCharging} />
+        <HeroMetric label="Small Pads"     value={fmt(totalSmall)}                         detail="Small boost pad pickups (count)" color={ORANGE}                     Icon={Layers}          />
         <HeroMetric label="Stolen"         value={fmt(totalStolen)}                        detail="Enemy-side pickups"                color={ORANGE}                     Icon={ShieldAlert}     />
         <HeroMetric label="Top Collector"  value={shortName(topCollector?.playerName, 12)} detail={`${fmt(topCollector?.pickups)} total pickups`} color={topCollector?.color ?? BLUE}  Icon={Gauge} />
         <HeroMetric label="Top Stealer"    value={shortName(topStealer?.playerName, 12)}   detail={`${fmt(topStealer?.boostStolen)} stolen pads`} color={topStealer?.color ?? ORANGE}  Icon={Zap}   />

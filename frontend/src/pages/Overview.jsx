@@ -2,6 +2,8 @@ import { Clock, Map, Trophy, Server, Gamepad2, Users, User, CalendarDays } from 
 import Scoreboard from '@/components/Scoreboard'
 import EventTimeline from '@/components/EventTimeline'
 import TeamStats from '@/components/TeamStats'
+import BoostEconomyPanel from '@/components/BoostEconomyPanel'
+import GoalBreakdown from '@/components/GoalBreakdown'
 import UploadReplay from '@/components/UploadReplay'
 import AnalysisProgress from '@/components/AnalysisProgress'
 import { usePageData } from '@/hooks/usePageData'
@@ -162,6 +164,8 @@ export default function Overview() {
           <MatchHero match={data.match} onAnalysisStart={handleAnalysisStart} />
           <div className="px-8 py-8 space-y-6 max-w-7xl mx-auto">
             <Scoreboard players={data.players} />
+            <BoostEconomyPanel teams={data.teams} players={data.players} />
+            <GoalBreakdown goals={data.goalBreakdown} />
             <EventTimeline events={data.events} matchDuration={data.match.totalSecondsPlayed ?? 300} />
             <TeamStats teams={data.teams} />
           </div>

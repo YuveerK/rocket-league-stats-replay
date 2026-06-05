@@ -12,6 +12,7 @@ import { MeasuredChart } from '@/components/ui/MeasuredChart'
 import { ChartTooltip } from '@/components/ui/ChartTooltip'
 import { PageHeader } from '@/components/layout/PageHeader'
 import ReplayPage from '@/components/layout/ReplayPage'
+import DemoMatrix from '@/components/DemoMatrix'
 import { usePageData } from '@/hooks/usePageData'
 import { useAnalysisJob } from '@/hooks/useAnalysisJob'
 import { n, fmt, fmtDuration, shortName } from '@/lib/formatters'
@@ -327,6 +328,8 @@ export default function Demos() {
             <PlayerBarChart rows={takenRows}     dataKey="deaths" name="Demos taken"     accent={PURPLE} />
           </Panel>
         </section>
+
+        <DemoMatrix matrix={data?.demoMatrix} players={players} />
 
         <section className="grid grid-cols-1 gap-5 xl:grid-cols-[0.95fr_1.05fr]">
           <Panel eyebrow="Players" title="Demo Impact Balance" subtitle="For, taken and net by player" Icon={Target} accent={GREEN}>

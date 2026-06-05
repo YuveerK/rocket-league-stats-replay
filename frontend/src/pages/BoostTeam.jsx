@@ -78,6 +78,7 @@ function MetricTable({ blue, orange }) {
     ['Time 0 boost',          blue.zeroBoostSeconds,    orange.zeroBoostSeconds,    fmtSeconds],
     ['Time 100 boost',        blue.fullBoostSeconds,    orange.fullBoostSeconds,    fmtSeconds],
     ['Amount collected',      blue.amountCollected,     orange.amountCollected,     fmt],
+    ['Boost used',            blue.boostUsed,           orange.boostUsed,           fmt],
     ['Amount stolen',         blue.amountStolen,        orange.amountStolen,        fmt],
     ['Big pads count',        blue.bigPads,             orange.bigPads,             fmt],
     ['Small pads count',      blue.smallPads,           orange.smallPads,           fmt],
@@ -130,7 +131,10 @@ function DriverRows({ players }) {
             <div className="grid grid-cols-4 gap-4 text-right">
               <div><div className="section-label">BPM</div><div className="stat-num text-sm font-black text-white/75">{fmt(player.bpm, 1)}</div></div>
               <div><div className="section-label">Avg</div><div className="stat-num text-sm font-black text-white/75">{fmt(player.averageBoost, 1)}</div></div>
-              <div><div className="section-label">Collected</div><div className="stat-num text-sm font-black text-emerald-300">{fmt(player.boostCollectedApprox)}</div></div>
+              <div><div className="section-label">Units</div><div className="stat-num text-sm font-black text-emerald-300">{fmt(player.boostCollectedApprox)}</div></div>
+              <div><div className="section-label">Used</div><div className="stat-num text-sm font-black text-white/75">{fmt(player.boostUsed, 1)}</div></div>
+              <div><div className="section-label">Big</div><div className="stat-num text-sm font-black text-sky-300">{fmt(player.bigPads)}</div></div>
+              <div><div className="section-label">Small</div><div className="stat-num text-sm font-black text-violet-300">{fmt(player.smallPads)}</div></div>
               <div><div className="section-label">Stolen</div><div className="stat-num text-sm font-black text-amber-300">{fmt(player.amountStolen)}</div></div>
             </div>
           </div>
@@ -157,6 +161,7 @@ export default function BoostTeam() {
     { metric: 'BPM',       Blue: n(blue.bpm),               Orange: n(orange.bpm)               },
     { metric: 'Avg boost', Blue: n(blue.averageBoostTotal),  Orange: n(orange.averageBoostTotal)  },
     { metric: 'Collected', Blue: n(blue.amountCollected),    Orange: n(orange.amountCollected)    },
+    { metric: 'Used',      Blue: n(blue.boostUsed),          Orange: n(orange.boostUsed)          },
     { metric: 'Stolen',    Blue: n(blue.amountStolen),       Orange: n(orange.amountStolen)       },
   ], [blue, orange])
 
@@ -178,6 +183,8 @@ export default function BoostTeam() {
   ], [blue, orange])
 
   const totalCollected = n(blue.amountCollected) + n(orange.amountCollected)
+  const totalBigPads   = n(blue.bigPads) + n(orange.bigPads)
+  const totalSmallPads = n(blue.smallPads) + n(orange.smallPads)
   const totalStolen    = n(blue.amountStolen)    + n(orange.amountStolen)
   const totalOverfill  = n(blue.overfillTotal)   + n(orange.overfillTotal)
   const bpmLeader      = n(blue.bpm) >= n(orange.bpm) ? 'Blue' : 'Orange'
@@ -196,7 +203,9 @@ export default function BoostTeam() {
           onUpload={analysis.handleAnalysisStart}
         >
           <div className="grid grid-cols-1 gap-3 md:grid-cols-5">
-            <HeroMetric label="Collected"     value={fmt(totalCollected)}                                         detail="Visible boost meter gains"            color={GREEN}                              Icon={Database}       />
+            <HeroMetric label="Collected (units)" value={fmt(totalCollected)}                                     detail="Visible boost meter gains"            color={GREEN}                              Icon={Database}       />
+            <HeroMetric label="Big Pads"          value={fmt(totalBigPads)}                                       detail="Large boost pad pickups (count)"    color={BLUE}                               Icon={BatteryCharging}/>
+            <HeroMetric label="Small Pads"        value={fmt(totalSmallPads)}                                     detail="Small boost pad pickups (count)"  color={PURPLE}                             Icon={Layers}          />
             <HeroMetric label="Stolen Amount" value={fmt(totalStolen)}                                            detail={`${stealLeader} stole more boost`}    color={GOLD}                               Icon={Zap}            />
             <HeroMetric label="BPM Leader"    value={bpmLeader}                                                   detail={`${fmt(Math.max(n(blue.bpm), n(orange.bpm)), 1)} team BPM`} color={bpmLeader === 'Blue' ? BLUE : ORANGE} Icon={Gauge} />
             <HeroMetric label="Overfill"      value={fmt(totalOverfill)}                                          detail="Estimated boost lost to cap"          color={RED}                                Icon={BatteryCharging}/>

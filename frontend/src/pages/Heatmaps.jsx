@@ -99,7 +99,7 @@ export default function Heatmaps() {
   const [playing, setPlaying]         = useState(false)
   const [speed, setSpeed]             = useState(1)
   const [mode, setMode]               = useState('cumulative')   // 'cumulative' | 'window'
-  const [showTrail, setShowTrail]     = useState(true)
+  const [showTrail, setShowTrail]     = useState(false)
   const [trailSecs, setTrailSecs]     = useState(10)
 
   const rafRef      = useRef(null)
@@ -302,6 +302,9 @@ export default function Heatmaps() {
                 showTrail={showTrail}
                 trailWindowSeconds={trailSecs}
               />
+              <p className="mt-2 text-center text-[10px] text-white/30">
+                {showTrail ? 'Trail overlay on · toggle off for density only' : 'Brighter areas = more time spent'}
+              </p>
               <div className="flex flex-wrap gap-1.5 mt-3">
                 {visiblePlayerList.map(p => {
                   const color = colorByName.get(p.playerName) ?? TEAM_COLOR[p.team] ?? '#60a5fa'

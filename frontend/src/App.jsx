@@ -12,6 +12,7 @@ import ReplayLibrary from '@/pages/ReplayLibrary'
 import Movement from '@/pages/Movement'
 import Watch from '@/pages/Watch'
 import CareerStats from '@/pages/CareerStats'
+import Positioning from '@/pages/Positioning'
 import PeerBreakdown from '@/pages/PeerBreakdown'
 import PlayerCompare from '@/pages/PlayerCompare'
 
@@ -35,7 +36,7 @@ export default function App() {
             <Route path="/boost/team"     element={<BoostTeam />} />
             <Route path="/boost/players"  element={<BoostPlayers />} />
             <Route path="/boost/pickups"  element={<BoostPickups />} />
-            <Route path="/positioning"    element={<PLACEHOLDER title="Positioning" />} />
+            <Route path="/positioning"    element={<Positioning />} />
             <Route path="/movement"         element={<Movement />} />
             <Route path="/watch"          element={<Watch />} />
             <Route path="/career"         element={<CareerStats />} />

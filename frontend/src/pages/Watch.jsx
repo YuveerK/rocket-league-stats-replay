@@ -10,6 +10,7 @@ import { WatchHeader } from '@/features/watch/components/WatchHeader'
 import { PlayerPanel } from '@/features/watch/components/PlayerPanel'
 import { FieldLegend } from '@/features/watch/components/FieldLegend'
 import { KickoffCountdown } from '@/features/watch/components/KickoffCountdown'
+import { EventPopup } from '@/features/watch/components/EventPopup'
 import { WatchControls } from '@/features/watch/components/WatchControls'
 
 function shallowEqualObjects(a, b) {
@@ -34,6 +35,8 @@ export default function Watch() {
   const [playerSpeeds,  setPlayerSpeeds]  = useState({})
   const [playerBoosts,  setPlayerBoosts]  = useState({})
   const [playerBoosting, setPlayerBoosting] = useState({})
+  const [popupEvent, setPopupEvent] = useState(null)
+  const popupKeyRef = useRef(0)
 
   const usesMappedPlayback = hasPlaybackTimeMapping(data)
   const sceneTime    = sceneTimeForPlayback(data, currentTime)
@@ -70,6 +73,21 @@ export default function Watch() {
     return () => clearInterval(id)
   }, [])
 
+  // Event popup — fires whenever playback crosses any event timestamp
+  useEffect(() => {
+    if (!data) return
+    const prev = prevTimeRef.current
+    if (currentTime <= prev) return
+    for (const ev of data.events ?? []) {
+      const t = eventPlaybackSeconds(ev)
+      if (t > prev && t <= currentTime) {
+        popupKeyRef.current += 1
+        setPopupEvent({ ...ev, _key: popupKeyRef.current })
+        break
+      }
+    }
+  }, [currentTime, data, prevTimeRef])
+
   // Goal explosion effects
   useEffect(() => {
     const prev = prevTimeRef.current
@@ -105,12 +123,13 @@ export default function Watch() {
   )
 
   return (
-    <div className="relative flex h-screen flex-col overflow-hidden" style={{ background: '#02040a' }}>
+    <div className="relative flex h-screen flex-col overflow-hidden" style={{ background: '#6fa8d0' }}>
       <WatchHeader data={data} duration={duration} />
 
       <main className="relative min-h-0 flex-1 overflow-hidden">
         <SceneViewer data={data} panSpeedRef={panSpeedRef} sceneRef={sceneRef} />
         <KickoffCountdown label={countdown} />
+        <EventPopup event={popupEvent} />
 
         <section className="pointer-events-none absolute left-4 top-4 flex w-52 flex-col gap-2.5">
           {/* Clock */}
