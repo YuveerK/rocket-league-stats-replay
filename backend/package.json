@@ -9,6 +9,9 @@
     "post": "node src/pipeline/postToDiscord.js",
     "watch": "node src/pipeline/watchReplays.js",
     "seed": "node src/pipeline/seedReplays.js",
+    "seed:fresh": "node src/pipeline/seedReplays.js --truncate",
+    "seed:epic": "node src/pipeline/seedEpicReplays.js",
+    "seed:epic:fresh": "node src/pipeline/seedEpicReplays.js --truncate",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
