@@ -20,12 +20,18 @@ export function usePageData(endpoint) {
 
   useEffect(() => {
     let cancelled = false
-    setLoading(true)
-    apiGet(endpoint)
-      .then(d => { if (!cancelled) { setData(d); setError(null) } })
-      .catch(e => { if (!cancelled) { setError(String(e)); setData(null) } })
-      .finally(() => { if (!cancelled) setLoading(false) })
-    return () => { cancelled = true }
+    const id = setTimeout(() => {
+      setLoading(true)
+      apiGet(endpoint)
+        .then(d => { if (!cancelled) { setData(d); setError(null) } })
+        .catch(e => { if (!cancelled) { setError(String(e)); setData(null) } })
+        .finally(() => { if (!cancelled) setLoading(false) })
+    }, 0)
+
+    return () => {
+      cancelled = true
+      clearTimeout(id)
+    }
   }, [endpoint])
 
   return { data, loading, error, refetch: fetchData }

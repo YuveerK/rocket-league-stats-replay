@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { apiGet, apiPost } from '@/services/apiClient'
 import { dateInputBoundary, replayDate, replayTitle, searchableText } from '@/lib/replayUtils'
 
+const EMPTY_REPLAYS = []
+
 export function useReplayLibrary() {
   const navigate = useNavigate()
   const [library, setLibrary] = useState(null)
@@ -39,9 +41,12 @@ export function useReplayLibrary() {
       })
   }, [])
 
-  useEffect(() => { loadReplays(false) }, [loadReplays])
+  useEffect(() => {
+    const id = setTimeout(() => loadReplays(false), 0)
+    return () => clearTimeout(id)
+  }, [loadReplays])
 
-  const replays = library?.replays ?? []
+  const replays = library?.replays ?? EMPTY_REPLAYS
 
   const filteredReplays = useMemo(() => {
     const text = query.trim().toLowerCase()

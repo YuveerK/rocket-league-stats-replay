@@ -18,10 +18,12 @@ export function usePlayback(data) {
   const usesMappedPlaybackRef  = useRef(usesMappedPlayback)
   const durationRef            = useRef(duration)
 
-  speedRef.current              = speed
-  dataRef.current               = data
-  usesMappedPlaybackRef.current = usesMappedPlayback
-  durationRef.current           = duration
+  useEffect(() => {
+    speedRef.current              = speed
+    dataRef.current               = data
+    usesMappedPlaybackRef.current = usesMappedPlayback
+    durationRef.current           = duration
+  }, [data, duration, speed, usesMappedPlayback])
 
   // Playback ticker — only starts when we have real data (duration > 0).
   // speed/data/usesMappedPlayback are read via refs so the loop never restarts
@@ -49,8 +51,10 @@ export function usePlayback(data) {
   // Stop playback once we reach the end
   useEffect(() => {
     if (playing && duration > 0 && currentTime >= duration) {
-      setPlaying(false)
+      const id = setTimeout(() => setPlaying(false), 0)
+      return () => clearTimeout(id)
     }
+    return undefined
   }, [currentTime, duration, playing])
 
   const reset = useCallback(() => { setPlaying(false); setCurrentTime(0) }, [])
