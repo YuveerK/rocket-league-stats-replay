@@ -1,5 +1,6 @@
-import { readOutput } from "../repositories/output.repository.js";
+import { readReplayArtifacts } from "../repositories/artifact.repository.js";
 import { carDisplayName } from "../utils/format.js";
+import { buildDemoMatrix, buildGoalBreakdown } from "../utils/matchInsights.js";
 
 function latestPositionAt(samples, elapsedSeconds) {
   if (!samples?.length || elapsedSeconds == null) return null;
@@ -13,17 +14,21 @@ function latestPositionAt(samples, elapsedSeconds) {
   return best;
 }
 
-export async function getOverviewData() {
-  const [finalStats, timeline, ballStats, matchMeta, playerMapping, advancedStats, positions] =
-    await Promise.all([
-      readOutput("final-player-stats.json"),
-      readOutput("game-timeline.json"),
-      readOutput("ball-stats.json"),
-      readOutput("match-meta.json"),
-      readOutput("player-mapping.json"),
-      readOutput("advanced-player-stats.json"),
-      readOutput("player-position-timeline.json"),
-    ]);
+export async function getOverviewData({ replayId = null } = {}) {
+  const [finalStats, timeline, ballStats, ballTimeline, matchMeta, playerMapping, advancedStats, positions] =
+    await readReplayArtifacts(
+      [
+        "final-player-stats.json",
+        "game-timeline.json",
+        "ball-stats.json",
+        "ball-position-timeline.json",
+        "match-meta.json",
+        "player-mapping.json",
+        "advanced-player-stats.json",
+        "player-position-timeline.json",
+      ],
+      { replayId },
+    );
 
   if (!finalStats) return null;
 
@@ -88,9 +93,14 @@ export async function getOverviewData() {
       deaths: p.deaths ?? 0,
       bpm: p.bpm ?? 0,
       boostCollectedApprox: p.boostCollectedApprox ?? 0,
+      boostUsed: p.boostUsed ?? 0,
+      pickups: p.pickups ?? 0,
       bigPads: p.bigPads ?? 0,
       smallPads: p.smallPads ?? 0,
+      unknownPads: p.unknownPads ?? 0,
       boostStolen: p.boostStolen ?? 0,
+      actualPickupGain: p.actualPickupGain ?? 0,
+      theoreticalPickupEstimate: p.theoreticalPickupEstimate ?? 0,
       shootingPercentage: p.shootingPercentage ?? 0,
       goalsConcededWhileDefender: defenderConcedesByName.get(p.playerName) ?? 0,
       supersonicPct: adv?.supersonicPct ?? p.supersonicPct ?? null,
@@ -111,14 +121,20 @@ export async function getOverviewData() {
   for (const p of players) {
     if (p.team == null) continue;
     if (!teams[p.team]) {
-      teams[p.team] = { goals: 0, shots: 0, assists: 0, saves: 0, kills: 0, bpmSum: 0, bpmCount: 0, boostCollected: 0, boostStolen: 0, bigPads: 0, smallPads: 0 };
+      teams[p.team] = {
+        goals: 0, shots: 0, assists: 0, saves: 0, kills: 0, deaths: 0,
+        bpmSum: 0, bpmCount: 0, boostCollected: 0, boostUsed: 0, boostStolen: 0,
+        bigPads: 0, smallPads: 0, unknownPads: 0,
+      };
     }
     const t = teams[p.team];
     t.goals += p.goals; t.shots += p.shots; t.assists += p.assists;
-    t.saves += p.saves; t.kills += p.kills;
+    t.saves += p.saves; t.kills += p.kills; t.deaths += p.deaths;
     t.boostCollected += p.boostCollectedApprox;
+    t.boostUsed += p.boostUsed;
     t.boostStolen += p.boostStolen;
     t.bigPads += p.bigPads; t.smallPads += p.smallPads;
+    t.unknownPads += p.unknownPads;
     if (p.bpm) { t.bpmSum += p.bpm; t.bpmCount++; }
   }
 
@@ -126,14 +142,23 @@ export async function getOverviewData() {
     teams[key] = {
       goals: t.goals, shots: t.shots, assists: t.assists, saves: t.saves,
       demosInflicted: t.kills,
+      demosTaken: t.deaths,
+      netDemos: t.kills - t.deaths,
       shootingPct: t.shots > 0 ? Number(((t.goals / t.shots) * 100).toFixed(1)) : 0,
       possession: ballStats?.possession?.[`team${key}Pct`] ?? null,
       bpm: t.bpmCount > 0 ? Number((t.bpmSum / t.bpmCount).toFixed(1)) : 0,
       boostCollected: Number(t.boostCollected.toFixed(1)),
+      boostUsed: Number(t.boostUsed.toFixed(1)),
       boostStolen: Number(t.boostStolen.toFixed(1)),
-      bigPads: t.bigPads, smallPads: t.smallPads,
+      bigPads: t.bigPads,
+      smallPads: t.smallPads,
+      unknownPads: t.unknownPads,
     };
   }
+
+  const ballSamples = ballTimeline?.samples ?? [];
+  const goalBreakdown = buildGoalBreakdown(timeline?.events, ballSamples, players);
+  const demoMatrix = buildDemoMatrix(timeline?.events, players);
 
   return {
     match: {
@@ -154,6 +179,8 @@ export async function getOverviewData() {
     },
     teams,
     players,
+    goalBreakdown,
+    demoMatrix,
     events: (timeline?.events ?? []).map((e) => ({
       id: e.id,
       type: e.type,
@@ -169,16 +196,18 @@ export async function getOverviewData() {
       team: e.team,
       scoreAfter: e.scoreAfter ?? null,
       victimPlayerName: e.victimPlayerName ?? null,
+      killerPlayerName: e.killerPlayerName ?? null,
     })),
   };
 }
 
-export async function getMovementData() {
-  const [finalStats, advancedStats, matchMeta] = await Promise.all([
-    readOutput("final-player-stats.json"),
-    readOutput("advanced-player-stats.json"),
-    readOutput("match-meta.json"),
-  ]);
+export { getPositioningData } from "./positioning.service.js";
+
+export async function getMovementData({ replayId = null } = {}) {
+  const [finalStats, advancedStats, matchMeta] = await readReplayArtifacts(
+    ["final-player-stats.json", "advanced-player-stats.json", "match-meta.json"],
+    { replayId },
+  );
 
   if (!finalStats && !advancedStats) return null;
 
