@@ -123,14 +123,16 @@ export default function EventTimeline({ events = [], matchDuration = 300 }) {
   const svgRef = useRef()
   const duration = matchDuration || 300
 
-  const visible = useMemo(
-    () => events.filter(event => EV[event.type] && eventTime(event) != null),
-    [events],
-  )
-  const goals = visible.filter(event => event.type === 'goal')
-  const demos = visible.filter(event => event.type === 'kill')
-  const saves = visible.filter(event => event.type === 'save')
-  const positioned = useMemo(() => spreadEvents(visible, duration), [visible, duration])
+  const { goals, demos, saves, positioned } = useMemo(() => {
+    const visible = events.filter(event => EV[event.type] && eventTime(event) != null)
+
+    return {
+      goals: visible.filter(event => event.type === 'goal'),
+      demos: visible.filter(event => event.type === 'kill'),
+      saves: visible.filter(event => event.type === 'save'),
+      positioned: spreadEvents(visible, duration),
+    }
+  }, [duration, events])
 
   const ticks = []
   const tickStep = duration <= 600 ? 60 : 120
