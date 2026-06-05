@@ -99,6 +99,23 @@ function sampleToGrid(s) {
   return { gx, gy }
 }
 
+/** Spread each sample slightly so the grid reads as smooth heat, not scattered dots. */
+function splatSample(raw, gx, gy) {
+  const kernel = [
+    [0.12, 0.2, 0.12],
+    [0.2,  1,   0.2],
+    [0.12, 0.2, 0.12],
+  ]
+  for (let dy = -1; dy <= 1; dy++) {
+    for (let dx = -1; dx <= 1; dx++) {
+      const nx = gx + dx
+      const ny = gy + dy
+      if (nx < 0 || nx >= GW || ny < 0 || ny >= GH) continue
+      raw[ny * GW + nx] += kernel[dy + 1][dx + 1]
+    }
+  }
+}
+
 function buildSmoothedGrid(samples, minTime = 0, maxTime = Infinity) {
   const raw = new Float32Array(GW * GH)
   let count = 0
@@ -108,12 +125,14 @@ function buildSmoothedGrid(samples, minTime = 0, maxTime = Infinity) {
     if (t < minTime || t > maxTime) continue
     const { gx, gy } = sampleToGrid(s)
     if (gx >= 0 && gx < GW && gy >= 0 && gy < GH) {
-      raw[gy * GW + gx]++
+      splatSample(raw, gx, gy)
       count++
     }
   }
 
-  let smoothed = blur(raw); smoothed = blur(smoothed)
+  let smoothed = blur(raw)
+  smoothed = blur(smoothed)
+  smoothed = blur(smoothed)
   return { count, smoothed }
 }
 
@@ -168,6 +187,8 @@ export default function FieldHeatmap({
     ctx.clearRect(0, 0, cw, ch)
 
     const gamma = 0.42
+    const intensityScale = 1.35
+    const alphaPeak = 0.82
 
     if (!offscRef.current) {
       offscRef.current = document.createElement('canvas')
@@ -190,12 +211,20 @@ export default function FieldHeatmap({
         const d = Math.pow(Math.min(1, smoothed[i] / normMax), gamma)
         if (d <= 0) continue
 
-        const intensity = Math.min(1, d * 1.35)
+        const intensity = Math.min(1, d * intensityScale)
+        const alpha = intensity * alphaPeak
         const j = i * 4
-        imgData.data[j]     = Math.min(255, imgData.data[j]     + r * intensity)
-        imgData.data[j + 1] = Math.min(255, imgData.data[j + 1] + g * intensity)
-        imgData.data[j + 2] = Math.min(255, imgData.data[j + 2] + b * intensity)
-        imgData.data[j + 3] = Math.min(255, imgData.data[j + 3] + 255 * intensity)
+        const existingA = imgData.data[j + 3] / 255
+        const blendA = Math.min(1, existingA + alpha * (1 - existingA))
+        const srcA = alpha
+        const outA = blendA
+        const outR = (imgData.data[j] * existingA + r * srcA * (1 - existingA)) / Math.max(outA, 0.001)
+        const outG = (imgData.data[j + 1] * existingA + g * srcA * (1 - existingA)) / Math.max(outA, 0.001)
+        const outB = (imgData.data[j + 2] * existingA + b * srcA * (1 - existingA)) / Math.max(outA, 0.001)
+        imgData.data[j]     = outR
+        imgData.data[j + 1] = outG
+        imgData.data[j + 2] = outB
+        imgData.data[j + 3] = outA * 255
       }
     })
 
@@ -208,7 +237,9 @@ export default function FieldHeatmap({
 
     ctx.imageSmoothingEnabled = true
     ctx.imageSmoothingQuality = 'high'
+    ctx.globalCompositeOperation = 'screen'
     ctx.drawImage(offscRef.current, 0, 0, cw, ch)
+    ctx.globalCompositeOperation = 'source-over'
   }, [heatmapLayers, maxTime, minTime])
 
   // ── Trail data ─────────────────────────────────────────────────────────
@@ -325,9 +356,9 @@ export default function FieldHeatmap({
               x1={toX(prev[1])} y1={toY(prev[0])}
               x2={toX(s[1])}    y2={toY(s[0])}
               stroke={layer.color}
-              strokeWidth={0.5 + alpha * 2.5}
+              strokeWidth={0.4 + alpha * 1.2}
               strokeLinecap="round"
-              opacity={0.10 + alpha * 0.62}
+              opacity={0.06 + alpha * 0.28}
             />
           )
         }))}

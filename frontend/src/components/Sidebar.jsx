@@ -5,7 +5,6 @@ import {
   Wind, Video, Camera, FileSpreadsheet, Trophy,
   FolderOpen, Users, GitCompareArrows,
 } from 'lucide-react'
-
 const NAV = [
   {
     section: 'STATS',

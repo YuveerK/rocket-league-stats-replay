@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Check, Loader, X, AlertCircle } from 'lucide-react'
+import { apiUrl } from '@/services/apiClient'
 
 export default function AnalysisProgress({ replayPath, replayName, onComplete }) {
   const [steps, setSteps] = useState([])
@@ -12,7 +13,7 @@ export default function AnalysisProgress({ replayPath, replayName, onComplete })
   useEffect(() => {
     if (!replayPath) return
 
-    const es = new EventSource(`/api/analyze?replayPath=${encodeURIComponent(replayPath)}`)
+    const es = new EventSource(apiUrl(`/api/analyze?replayPath=${encodeURIComponent(replayPath)}`))
 
     es.onmessage = (e) => {
       const data = JSON.parse(e.data)

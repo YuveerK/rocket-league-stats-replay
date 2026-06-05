@@ -15,8 +15,10 @@ const STATS = [
   { key: 'possession', label: 'Possession', Icon: Activity, fmt: value => value != null ? `${fmt(value, 1)}%` : '-', max: 100 },
   { key: 'demosInflicted', label: 'Demos', Icon: Zap },
   { key: 'bpm', label: 'BPM', Icon: Gauge, fmt: value => fmt(value, 1) },
-  { key: 'boostCollected', label: 'Boost Collected', Icon: BatteryCharging, fmt: value => fmt(value, 1) },
+  { key: 'boostCollected', label: 'Boost Collected (units)', Icon: BatteryCharging, fmt: value => fmt(value, 1) },
+  { key: 'boostUsed', label: 'Boost Used', Icon: BatteryCharging, fmt: value => fmt(value, 1) },
   { key: 'boostStolen', label: 'Boost Stolen', Icon: Zap },
+  { key: 'unknownPads', label: 'Unknown Pads', Icon: Gauge },
   { key: 'bigPads', label: 'Big Pads', Icon: BatteryCharging },
   { key: 'smallPads', label: 'Small Pads', Icon: BatteryCharging },
 ]
@@ -162,8 +164,15 @@ export default function TeamStats({ teams }) {
           <InsightCard label="Shot Pressure" blue={t0.shots} orange={t1.shots} Icon={Crosshair} />
           <InsightCard label="Conversion" blue={t0.shootingPct} orange={t1.shootingPct} Icon={Target} formatter={value => `${fmt(value, 1)}%`} />
           <InsightCard label="Possession" blue={t0.possession ?? 0} orange={t1.possession ?? 0} Icon={Activity} formatter={value => `${fmt(value, 1)}%`} />
-          <InsightCard label="Boost Collected" blue={t0.boostCollected} orange={t1.boostCollected} Icon={BatteryCharging} formatter={value => fmt(value, 1)} />
+          <InsightCard label="Boost Collected (units)" blue={t0.boostCollected} orange={t1.boostCollected} Icon={BatteryCharging} formatter={value => fmt(value, 1)} />
+          <InsightCard label="Boost Used" blue={t0.boostUsed} orange={t1.boostUsed} Icon={BatteryCharging} formatter={value => fmt(value, 1)} />
+          <InsightCard label="Big Pads" blue={t0.bigPads} orange={t1.bigPads} Icon={BatteryCharging} />
+          <InsightCard label="Small Pads" blue={t0.smallPads} orange={t1.smallPads} Icon={Gauge} />
         </div>
+
+        <p className="border-b border-white/[0.06] px-5 pb-4 text-xs text-white/35">
+          Pad counts (big / small) are estimated from replay pickup events. Boost collected is visible boost meter gain in units, not pad count.
+        </p>
 
         <div className="grid grid-cols-[96px_minmax(150px,1fr)_96px] gap-4 border-b border-white/[0.06] px-5 py-3">
           <div>

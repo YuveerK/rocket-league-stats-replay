@@ -1,5 +1,6 @@
 import { useRef, useState, useCallback } from 'react'
 import { Upload, FileVideo } from 'lucide-react'
+import { apiPost } from '@/services/apiClient'
 
 export default function UploadReplay({ onAnalysisStart, compact = false }) {
   const [dragging, setDragging] = useState(false)
@@ -18,12 +19,7 @@ export default function UploadReplay({ onAnalysisStart, compact = false }) {
     try {
       const body = new FormData()
       body.append('replay', file)
-      const res = await fetch('/api/upload', { method: 'POST', body })
-      if (!res.ok) {
-        const e = await res.json()
-        throw new Error(e.error ?? 'Upload failed')
-      }
-      const { replayPath, replayName } = await res.json()
+      const { replayPath, replayName } = await apiPost('/api/upload', body)
       onAnalysisStart(replayPath, replayName)
     } catch (err) {
       setError(err.message)
