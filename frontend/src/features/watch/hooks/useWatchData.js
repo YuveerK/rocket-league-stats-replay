@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { apiUrl } from '@/services/apiClient'
 import { eventPlaybackSeconds } from '../lib/playbackHelpers'
 
 export function useWatchData() {
@@ -7,7 +8,7 @@ export function useWatchData() {
   const [error,   setError]   = useState(null)
 
   useEffect(() => {
-    fetch('/api/watch-data')
+    fetch(apiUrl('/api/watch-data'))
       .then(r => r.ok ? r.json() : r.json().then(e => Promise.reject(e.error)))
       .then(payload => {
         payload.events = [...(payload.events ?? [])].sort(

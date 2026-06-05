@@ -1,27 +1,83 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { BALL_RADIUS, PAN_SPEED_BASE, PAN_SPEED_FAST, PAN_SPEED_MIN, PAN_SPEED_MAX } from '../constants'
-import { VIEW_TARGET } from './cameras'
+import { VIEW_TARGET, tickFirstPersonCamera } from './cameras'
 import { addField } from './addField'
 import { createCar } from './createCar'
 import { updateScene } from './updateScene'
 
+function createSunDirection(elevationDeg, azimuthDeg) {
+  const phi = THREE.MathUtils.degToRad(90 - elevationDeg)
+  const theta = THREE.MathUtils.degToRad(azimuthDeg)
+  return new THREE.Vector3().setFromSphericalCoords(1, phi, theta).normalize()
+}
+
+function createSkyDome(sunDirection) {
+  const sky = new THREE.Mesh(
+    new THREE.SphereGeometry(9000, 48, 24),
+    new THREE.ShaderMaterial({
+      uniforms: {
+        topColor: { value: new THREE.Color('#3f8fcf') },
+        midColor: { value: new THREE.Color('#78b8e2') },
+        horizonColor: { value: new THREE.Color('#c7e2f5') },
+        sunColor: { value: new THREE.Color('#fff1c2') },
+        sunDirection: { value: sunDirection },
+      },
+      vertexShader: `
+        varying vec3 vWorldDirection;
+
+        void main() {
+          vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+          vWorldDirection = normalize(worldPosition.xyz);
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform vec3 topColor;
+        uniform vec3 midColor;
+        uniform vec3 horizonColor;
+        uniform vec3 sunColor;
+        uniform vec3 sunDirection;
+        varying vec3 vWorldDirection;
+
+        void main() {
+          vec3 dir = normalize(vWorldDirection);
+          float height = clamp(dir.y * 0.5 + 0.5, 0.0, 1.0);
+          vec3 lowSky = mix(horizonColor, midColor, smoothstep(0.05, 0.45, height));
+          vec3 skyColor = mix(lowSky, topColor, smoothstep(0.38, 1.0, height));
+
+          float sunAmount = max(dot(dir, normalize(sunDirection)), 0.0);
+          float sunDisc = smoothstep(0.9992, 1.0, sunAmount);
+          float sunGlow = pow(sunAmount, 24.0) * 0.24 + pow(sunAmount, 140.0) * 0.22;
+
+          gl_FragColor = vec4(skyColor + sunColor * (sunGlow + sunDisc * 0.75), 1.0);
+        }
+      `,
+      side: THREE.BackSide,
+      depthWrite: false,
+      fog: false,
+      toneMapped: false,
+    }),
+  )
+  sky.renderOrder = -1000
+  return sky
+}
+
 export function createScene(mount, data, panSpeedRef) {
   const scene = new THREE.Scene()
-  scene.background = new THREE.Color('#02040a')
-  scene.fog = new THREE.Fog('#02040a', 180, 380)
 
-  const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 500)
+  const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 20000)
   camera.position.set(0, 95, 76)
   camera.up.set(0, 1, 0)
 
   const renderer = new THREE.WebGLRenderer({ antialias: true })
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
-  renderer.outputColorSpace  = THREE.SRGBColorSpace
-  renderer.toneMapping       = THREE.ACESFilmicToneMapping
-  renderer.toneMappingExposure = 1.35
-  renderer.shadowMap.enabled = true
-  renderer.shadowMap.type    = THREE.PCFShadowMap
+  renderer.outputColorSpace    = THREE.SRGBColorSpace
+  renderer.toneMapping         = THREE.ACESFilmicToneMapping
+  renderer.toneMappingExposure = 0.88
+  renderer.shadowMap.enabled   = true
+  renderer.shadowMap.type      = THREE.PCFSoftShadowMap
+  renderer.setClearColor('#7fb8df', 1)
   mount.appendChild(renderer.domElement)
 
   const controls = new OrbitControls(camera, renderer.domElement)
@@ -34,25 +90,33 @@ export function createScene(mount, data, panSpeedRef) {
   controls.maxDistance    = 400
   controls.target.copy(VIEW_TARGET)
 
-  scene.add(new THREE.HemisphereLight('#1a3050', '#071a0a', 4.5))
-  const keyLight = new THREE.DirectionalLight('#ffffff', 8)
-  keyLight.position.set(-25, 75, 35)
-  keyLight.castShadow = true
-  keyLight.shadow.mapSize.set(2048, 2048)
-  keyLight.shadow.camera.near   = 0.5
-  keyLight.shadow.camera.far    = 260
-  keyLight.shadow.camera.left   = -65
-  keyLight.shadow.camera.right  = 65
-  keyLight.shadow.camera.top    = 80
-  keyLight.shadow.camera.bottom = -80
-  keyLight.shadow.bias = -0.0005
-  scene.add(keyLight)
-  const fillLight = new THREE.DirectionalLight('#3b6fff', 3.0)
-  fillLight.position.set(30, 50, -35)
+  const sun = createSunDirection(34, 205)
+  scene.add(createSkyDome(sun))
+  scene.background = new THREE.Color('#7fb8df')
+  scene.fog = new THREE.FogExp2('#86b8d8', 0.00045)
+
+  scene.add(new THREE.HemisphereLight('#b9dfff', '#315b2c', 0.95))
+
+  const sunLight = new THREE.DirectionalLight('#fff0c8', 3.0)
+  sunLight.position.copy(sun).multiplyScalar(100)
+  sunLight.castShadow = true
+  sunLight.shadow.mapSize.set(2048, 2048)
+  sunLight.shadow.camera.near   = 0.5
+  sunLight.shadow.camera.far    = 260
+  sunLight.shadow.camera.left   = -65
+  sunLight.shadow.camera.right  = 65
+  sunLight.shadow.camera.top    = 80
+  sunLight.shadow.camera.bottom = -80
+  sunLight.shadow.bias = -0.0005
+  scene.add(sunLight)
+
+  const fillLight = new THREE.DirectionalLight('#9bc9ed', 0.5)
+  fillLight.position.set(-sun.x * 80, 50, -sun.z * 80)
   scene.add(fillLight)
-  const rimLight = new THREE.DirectionalLight('#ff7022', 2.0)
-  rimLight.position.set(0, 18, 88)
-  scene.add(rimLight)
+
+  const bounceLight = new THREE.DirectionalLight('#6f9f58', 0.28)
+  bounceLight.position.set(0, -30, 0)
+  scene.add(bounceLight)
 
   const boostPads = addField(scene, data)
 
@@ -137,7 +201,7 @@ export function createScene(mount, data, panSpeedRef) {
   const _fwd = new THREE.Vector3(), _rgt = new THREE.Vector3()
   const _mov = new THREE.Vector3(), _yAxis = new THREE.Vector3(0, 1, 0)
 
-  const sceneRefs = { scene, ball, camera, cars, boostPads, playbackSeconds: 0, watchData: data, triggerExplosion: null, cleanup: null, controls }
+  const sceneRefs = { scene, ball, camera, cars, boostPads, playbackSeconds: 0, watchData: data, triggerExplosion: null, cleanup: null, controls, firstPersonTarget: null }
 
   let lastFrameMs = performance.now(), frameId = null
   const animate = () => {
@@ -145,7 +209,7 @@ export function createScene(mount, data, panSpeedRef) {
     const delta = Math.min((now - lastFrameMs) / 1000, 0.05)
     lastFrameMs = now
 
-    if (keys.size > 0) {
+    if (!sceneRefs.firstPersonTarget && keys.size > 0) {
       camera.getWorldDirection(_fwd); _fwd.y = 0
       if (_fwd.lengthSq() > 0.0001) _fwd.normalize()
       _rgt.crossVectors(_fwd, _yAxis).normalize()
@@ -171,6 +235,9 @@ export function createScene(mount, data, panSpeedRef) {
     if (wd && secs != null) {
       sceneRefs.playerStats = updateScene(sceneRefs, wd, secs)
     }
+
+    // First-person camera runs after updateScene so car positions are already set
+    if (sceneRefs.firstPersonTarget) tickFirstPersonCamera(sceneRefs)
 
     for (let i = explosions.length - 1; i >= 0; i--) {
       const exp = explosions[i]

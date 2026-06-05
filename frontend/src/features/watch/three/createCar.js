@@ -70,6 +70,7 @@ export function createCar(player) {
   const color = teamColor(player.team)
   const group = new THREE.Group()
   const visualRoot = new THREE.Group()
+  const firstPersonHiddenObjects = []
   group.add(visualRoot)
   group.userData.visualRoot = visualRoot
 
@@ -90,12 +91,14 @@ export function createCar(player) {
     m.position.set(px, py + bodyYOffset, pz)
     if (rx) m.rotation.x = rx
     visualRoot.add(m)
+    return m
   }
   const addWheel = (geo, mat, px, py, pz, rx = 0) => {
     const m = new THREE.Mesh(geo, mat)
     m.position.set(px, py + modelYOffset, pz)
     if (rx) m.rotation.x = rx
     visualRoot.add(m)
+    return m
   }
 
   const BL = CAR_LENGTH, BH = CAR_HEIGHT, BW = CAR_WIDTH
@@ -104,9 +107,11 @@ export function createCar(player) {
 
   const cbH = BH * 0.5, cbL = BL * 0.53, cbW = BW * 0.83
   const cbY = lbY + lbH * 0.5 + cbH * 0.5
-  add(new THREE.BoxGeometry(cbL, cbH, cbW), bodyMat, -BL * 0.04, cbY, 0)
-  add(new THREE.BoxGeometry(0.07, cbH * 0.8,  cbW * 0.88), glassMat,  -BL * 0.04 + cbL * 0.5, cbY, 0)
-  add(new THREE.BoxGeometry(0.07, cbH * 0.72, cbW * 0.85), glassMat,  -BL * 0.04 - cbL * 0.5, cbY, 0)
+  firstPersonHiddenObjects.push(
+    add(new THREE.BoxGeometry(cbL, cbH, cbW), bodyMat, -BL * 0.04, cbY, 0),
+    add(new THREE.BoxGeometry(0.07, cbH * 0.8,  cbW * 0.88), glassMat,  -BL * 0.04 + cbL * 0.5, cbY, 0),
+    add(new THREE.BoxGeometry(0.07, cbH * 0.72, cbW * 0.85), glassMat,  -BL * 0.04 - cbL * 0.5, cbY, 0),
+  )
 
   const bY = lbY - 0.02
   add(new THREE.BoxGeometry(0.12, BH * 0.36, BW * 0.9), darkMat,  BL * 0.5 + 0.06, bY, 0)
@@ -167,12 +172,16 @@ export function createCar(player) {
   const boostBar = createBoostBar(color)
   group.add(boostBar)
   group.userData.boostBar = boostBar
+  firstPersonHiddenObjects.push(boostBar)
 
   group.traverse((obj) => { if (obj.isMesh) { obj.castShadow = true; obj.receiveShadow = true } })
 
   const label = makeLabelSprite(player.playerName, color)
   label.position.set(0, 2.8, 0)
   group.add(label)
+  firstPersonHiddenObjects.push(label)
+
+  group.userData.firstPersonHiddenObjects = firstPersonHiddenObjects
 
   return group
 }

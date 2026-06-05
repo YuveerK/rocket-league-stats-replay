@@ -106,8 +106,14 @@ export function sampleFieldAt(samples, seconds, index) {
   if (csecs <= samples[0][0]) return samples[0].length > index ? n(samples[0][index]) : null
   const last = samples[samples.length - 1]
   if (csecs >= last[0]) return last.length > index ? n(last[index]) : null
-  const row = samples[Math.max(0, findSampleIndex(samples, csecs) - 1)]
-  return row.length > index ? n(row[index]) : null
+  // Walk backward from the current time to find the nearest sample that carries this field.
+  // Many rows are position-only (length 4 or 8) due to sparse network updates; skipping them
+  // ensures boost/throttle values are correctly propagated rather than returning null.
+  const idx = findSampleIndex(samples, csecs)
+  for (let i = idx - 1; i >= 0; i--) {
+    if (samples[i].length > index) return n(samples[i][index])
+  }
+  return null
 }
 
 export function sampleBoostAmountAt(samples, seconds) { return sampleFieldAt(samples, seconds, 11) }
@@ -138,20 +144,34 @@ export function isVelocityForward(car, state) {
 export function isInBoostDrainSegment(samples, seconds) {
   if (!samples?.length) return false
   const csecs = seconds * 100
-  const index = findSampleIndex(samples, csecs)
-  const prev = samples[Math.max(0, index - 1)]
-  const next = samples[Math.min(samples.length - 1, index)]
-  if (prev.length < 12 || next.length < 12) return false
+  const idx = findSampleIndex(samples, csecs)
+
+  // Skip over sparse position-only rows — find the nearest boost-bearing samples
+  // on each side so that drain detection works even when adjacent rows lack boost data.
+  let prev = null
+  for (let i = idx - 1; i >= 0; i--) {
+    if (samples[i].length >= 12) { prev = samples[i]; break }
+  }
+  let next = null
+  for (let i = idx; i < samples.length; i++) {
+    if (samples[i].length >= 12) { next = samples[i]; break }
+  }
+
+  if (!prev || !next) return false
   if (csecs < prev[0] || csecs > next[0]) return false
   return n(next[11]) < n(prev[11]) - BOOST_DRAIN_MIN
 }
 
 export function getBoostDrainWindow(samples, seconds) {
   if (!samples?.length) return null
-  for (let i = samples.length - 1; i >= 1; i--) {
-    const prev = samples[i - 1]
-    const next = samples[i]
-    if (prev.length < 12 || next.length < 12) continue
+  // Work only with samples that carry boost data, so sparse position-only rows
+  // don't interrupt drain-window detection or cause early loop termination.
+  const boostRows = samples.filter(s => s.length >= 12)
+  if (boostRows.length < 2) return null
+
+  for (let i = boostRows.length - 1; i >= 1; i--) {
+    const prev = boostRows[i - 1]
+    const next = boostRows[i]
     const boostPrev = n(prev[11])
     const boostNext = n(next[11])
     if (boostNext >= boostPrev - BOOST_DRAIN_MIN) continue
@@ -160,10 +180,9 @@ export function getBoostDrainWindow(samples, seconds) {
     let end   = next[0] / 100
     const peakBoost = boostPrev
 
-    for (let j = i + 1; j < samples.length; j++) {
-      const prevRow = samples[j - 1]
-      const row = samples[j]
-      if (prevRow.length < 12 || row.length < 12) break
+    for (let j = i + 1; j < boostRows.length; j++) {
+      const prevRow = boostRows[j - 1]
+      const row = boostRows[j]
       if (n(row[11]) > n(prevRow[11]) + 2) break
       end = row[0] / 100
     }

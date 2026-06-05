@@ -1,8 +1,9 @@
-import { Eye, Gauge, Pause, Play, RotateCcw } from 'lucide-react'
+import { useState } from 'react'
+import { Eye, Gauge, Pause, Play, RotateCcw, User } from 'lucide-react'
 import { BLUE, ORANGE } from '../constants'
 import { eventPlaybackSeconds } from '../lib/playbackHelpers'
 import { fmtTime } from '../lib/sampleHelpers'
-import { setBroadcastCamera, setTopCamera } from '../three/cameras'
+import { setBroadcastCamera, setTopCamera, setFirstPersonCamera, clearFirstPersonCamera } from '../three/cameras'
 
 export function WatchControls({
   data, duration, currentTime, setCurrentTime,
@@ -10,6 +11,7 @@ export function WatchControls({
   panSpeed, setPanSpeed, PAN_SPEED_MIN, PAN_SPEED_MAX,
   reset, sceneRef,
 }) {
+  const [fpPlayer, setFpPlayer] = useState(null)
   const scrubPct = duration > 0 ? (currentTime / duration) * 100 : 0
   const panPct   = ((panSpeed - PAN_SPEED_MIN) / (PAN_SPEED_MAX - PAN_SPEED_MIN)) * 100
 
@@ -83,17 +85,50 @@ export function WatchControls({
           </span>
         </label>
 
-        <button type="button" onClick={() => setBroadcastCamera(sceneRef.current)}
+        <button type="button" onClick={() => { setBroadcastCamera(sceneRef.current); setFpPlayer(null) }}
           className="flex items-center gap-1.5 rounded-xl px-3.5 py-2.5 text-[11px] font-bold transition-transform hover:scale-105"
-          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.4)' }}>
+          style={!fpPlayer ? { background: 'rgba(59,130,246,0.14)', border: '1px solid rgba(59,130,246,0.28)', color: '#93c5fd' }
+                           : { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.4)' }}>
           <Eye size={13} /> Broadcast
         </button>
 
-        <button type="button" onClick={() => setTopCamera(sceneRef.current)}
+        <button type="button" onClick={() => { setTopCamera(sceneRef.current); setFpPlayer(null) }}
           className="flex items-center gap-1.5 rounded-xl px-3.5 py-2.5 text-[11px] font-bold transition-transform hover:scale-105"
           style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.4)' }}>
           <Gauge size={13} /> Top
         </button>
+
+        <div className="h-5 w-px" style={{ background: 'rgba(255,255,255,0.07)' }} />
+
+        {/* First-person buttons — one per player */}
+        {(data?.players ?? []).map((p) => {
+          const isActive = fpPlayer === p.playerName
+          const color    = p.team === 0 ? BLUE : ORANGE
+          return (
+            <button
+              key={p.playerName}
+              type="button"
+              onClick={() => {
+                if (isActive) {
+                  clearFirstPersonCamera(sceneRef.current)
+                  setFpPlayer(null)
+                  setBroadcastCamera(sceneRef.current)
+                } else {
+                  setFirstPersonCamera(sceneRef.current, p.playerName)
+                  setFpPlayer(p.playerName)
+                }
+              }}
+              className="flex items-center gap-1.5 rounded-xl px-3 py-2.5 text-[11px] font-bold transition-all hover:scale-105"
+              style={isActive
+                ? { background: `${color}22`, border: `1px solid ${color}66`, color, boxShadow: `0 0 14px ${color}44` }
+                : { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.38)' }}
+              title={`First-person: ${p.playerName}`}
+            >
+              <User size={12} style={{ color: isActive ? color : undefined }} />
+              <span className="max-w-22 truncate">{p.playerName}</span>
+            </button>
+          )
+        })}
       </div>
     </section>
   )

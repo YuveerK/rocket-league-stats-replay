@@ -16,6 +16,13 @@ export function addField(scene, data) {
   const fx = maxX * SCALE, fz = maxY * SCALE
 
   const oct = FIELD_OCTAGON_RL.map(([x, y]) => rlXZ(x, y))
+  const firstPersonHiddenObjects = []
+  const addFirstPersonHidden = (object) => {
+    object.userData.hideInFirstPerson = true
+    firstPersonHiddenObjects.push(object)
+    scene.add(object)
+    return object
+  }
 
   // Grass stripes
   const tc = document.createElement('canvas')
@@ -34,7 +41,7 @@ export function addField(scene, data) {
   const fieldShape = new THREE.Shape(oct.map(([x, z]) => new THREE.Vector2(x, z)))
   const fieldMesh  = new THREE.Mesh(
     new THREE.ShapeGeometry(fieldShape, 1),
-    new THREE.MeshStandardMaterial({ map: stripeTex, roughness: 0.95, metalness: 0 }),
+    new THREE.MeshStandardMaterial({ map: stripeTex, roughness: 0.86, metalness: 0, emissive: '#082010', emissiveIntensity: 0.14 }),
   )
   fieldMesh.rotation.x = -Math.PI / 2
   fieldMesh.position.y = -0.02
@@ -89,7 +96,7 @@ export function addField(scene, data) {
   }
 
   const wallH = 4.2
-  const wallMat = new THREE.LineBasicMaterial({ color: '#6080a0', transparent: true, opacity: 0.16 })
+  const wallMat = new THREE.LineBasicMaterial({ color: '#90b4cc', transparent: true, opacity: 0.35 })
   for (let i = 0; i < oct.length; i++) {
     const [x1, z1] = oct[i], [x2, z2] = oct[(i + 1) % oct.length]
     addLine([
@@ -98,8 +105,8 @@ export function addField(scene, data) {
     ], wallMat)
   }
 
-  const wallPanelMat = new THREE.MeshStandardMaterial({ color: '#0d1e35', transparent: true, opacity: 0.13, side: THREE.DoubleSide, depthWrite: false, roughness: 0.1, metalness: 0.3 })
-  const ceilMat = new THREE.MeshStandardMaterial({ color: '#081422', transparent: true, opacity: 0.18, side: THREE.DoubleSide, depthWrite: false })
+  const wallPanelMat = new THREE.MeshStandardMaterial({ color: '#2a4a6a', transparent: true, opacity: 0.22, side: THREE.DoubleSide, depthWrite: false, roughness: 0.1, metalness: 0.3 })
+  const ceilMat = new THREE.MeshStandardMaterial({ color: '#1a3a5a', transparent: true, opacity: 0.25, side: THREE.DoubleSide, depthWrite: false })
 
   const addWallQuad = (ax,ay,az, bx,by,bz, cx,cy,cz2, dx,dy,dz) => {
     const geo = new THREE.BufferGeometry()
@@ -108,7 +115,7 @@ export function addField(scene, data) {
     geo.computeVertexNormals()
     const m = new THREE.Mesh(geo, wallPanelMat)
     m.receiveShadow = true
-    scene.add(m)
+    addFirstPersonHidden(m)
   }
 
   const hw = goalWidth / 2
@@ -127,7 +134,8 @@ export function addField(scene, data) {
   const ceil = new THREE.Mesh(new THREE.ShapeGeometry(ceilShape, 1), ceilMat)
   ceil.rotation.x = Math.PI / 2
   ceil.position.y = wallH
-  scene.add(ceil)
+  addFirstPersonHidden(ceil)
 
+  scene.userData.firstPersonHiddenObjects = firstPersonHiddenObjects
   return addBoostPads(scene, data)
 }
