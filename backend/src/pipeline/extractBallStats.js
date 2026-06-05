@@ -184,7 +184,10 @@ async function main() {
 
     for (const deleted of frame.deleted_actors ?? []) {
       const deletedId = typeof deleted === "number" ? deleted : getActorId(deleted);
-      if (deletedId !== null) activeActors.delete(deletedId);
+      if (deletedId !== null) {
+        activeActors.delete(deletedId);
+        ballActorIds.delete(deletedId);
+      }
     }
   }
 

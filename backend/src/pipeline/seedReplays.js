@@ -5,6 +5,24 @@ import path from "node:path";
 import { loadEnv, getConfigValue, ROOT_DIR } from "../utils/config.js";
 import { prisma } from "../../lib/prisma.js";
 
+function quoteIdentifier(id) {
+  return `"${String(id).replace(/"/g, '""')}"`;
+}
+
+async function truncateDatabase() {
+  const tables = await prisma.$queryRaw`
+    SELECT table_name FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
+      AND table_name <> '_prisma_migrations'
+    ORDER BY table_name
+  `;
+  if (!tables.length) { console.log("No tables to truncate."); return; }
+  const list = tables.map((r) => `public.${quoteIdentifier(r.table_name)}`).join(", ");
+  console.log(`Truncating ${tables.length} table(s)...`);
+  await prisma.$executeRawUnsafe(`TRUNCATE TABLE ${list} RESTART IDENTITY CASCADE`);
+  console.log("Database cleared.\n");
+}
+
 const DEFAULT_REPLAY_DIR = path.join(ROOT_DIR, "replays");
 
 function runPipeline(replayPath) {
@@ -37,6 +55,11 @@ async function listReplays(dir) {
 async function main() {
   loadEnv();
 
+  const truncate = process.argv.includes("--truncate");
+  const force    = truncate || process.argv.includes("--force");
+
+  if (truncate) await truncateDatabase();
+
   const replayDir = getConfigValue("REPLAY_WATCH_DIR") ?? DEFAULT_REPLAY_DIR;
   const replayPaths = await listReplays(replayDir);
 
@@ -45,8 +68,7 @@ async function main() {
     return;
   }
 
-  console.log(`Found ${replayPaths.length} replay(s) in ${replayDir}`);
-  console.log("Checking which are already in the database...\n");
+  console.log(`Found ${replayPaths.length} replay(s) in ${replayDir}\n`);
 
   let seeded = 0;
   let skipped = 0;
@@ -58,11 +80,13 @@ async function main() {
     const replayId = path.basename(replayPath, ".replay");
     const progress = `[${i + 1}/${replayPaths.length}]`;
 
-    const existing = await prisma.replay.findUnique({ where: { replayId }, select: { replayId: true } });
-    if (existing) {
-      console.log(`${progress} Already in DB — skipping ${fileName}`);
-      skipped++;
-      continue;
+    if (!force) {
+      const existing = await prisma.replay.findUnique({ where: { replayId }, select: { replayId: true } });
+      if (existing) {
+        console.log(`${progress} Already in DB — skipping ${fileName}`);
+        skipped++;
+        continue;
+      }
     }
 
     console.log(`${progress} Seeding ${fileName}...`);
