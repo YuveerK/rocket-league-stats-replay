@@ -15,6 +15,292 @@
   }
 }
 
+/* ── Design tokens ─────────────────────────────────────────── */
+:root {
+  --app-text:           #e2e8f0;
+  --app-text-secondary: rgba(226,232,240,0.6);
+  --app-text-faint:     rgba(226,232,240,0.28);
+  --app-border:         rgba(255,255,255,0.08);
+  --app-glass-border:   rgba(255,255,255,0.07);
+  --app-surface-muted:  rgba(255,255,255,0.04);
+  --app-surface:        #0c0f1a;
+}
+
+/* ── Glass card (replay list items) ───────────────────────── */
+.glass-card {
+  background: rgba(255,255,255,0.025);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 20px;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+.glass-card:hover {
+  background: rgba(255,255,255,0.045);
+  border-color: rgba(255,255,255,0.12);
+}
+.glass-card--selected {
+  background: rgba(96,165,250,0.06) !important;
+  border-color: rgba(96,165,250,0.35) !important;
+  box-shadow: 0 0 0 1px rgba(96,165,250,0.15), 0 4px 24px rgba(96,165,250,0.08);
+}
+
+/* ── Glass panel (filter bar, empty states) ───────────────── */
+.glass-panel {
+  background: rgba(255,255,255,0.025);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 20px;
+}
+
+/* ── Feature panel (selected replay sidebar) ──────────────── */
+.feature-panel {
+  background: linear-gradient(160deg, rgba(96,165,250,0.07) 0%, rgba(12,15,26,0.9) 60%);
+  border: 1px solid rgba(96,165,250,0.22);
+  border-radius: 24px;
+}
+
+/* ── Primary button ───────────────────────────────────────── */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s, box-shadow 0.15s;
+  box-shadow: 0 2px 12px rgba(59,130,246,0.35);
+  white-space: nowrap;
+}
+.btn-primary:hover {
+  opacity: 0.88;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px rgba(59,130,246,0.45);
+}
+.btn-primary:active {
+  transform: translateY(0);
+}
+.btn-primary-lg {
+  width: 100%;
+  justify-content: center;
+  padding: 13px 20px;
+  font-size: 14px;
+  border-radius: 16px;
+}
+
+/* ── Ghost button ─────────────────────────────────────────── */
+.glass-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(226,232,240,0.65);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+.glass-btn-ghost:hover {
+  background: rgba(255,255,255,0.09);
+  border-color: rgba(255,255,255,0.18);
+  color: #e2e8f0;
+}
+.glass-btn-ghost:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* ── Form inputs / selects ────────────────────────────────── */
+.glass-input {
+  display: block;
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: #e2e8f0;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s, background 0.15s;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.glass-input::placeholder {
+  color: rgba(226,232,240,0.28);
+}
+.glass-input:focus {
+  border-color: rgba(96,165,250,0.45);
+  background: rgba(96,165,250,0.05);
+}
+.glass-input--with-icon {
+  padding-left: 42px;
+}
+.glass-input--with-icon-sm {
+  padding-left: 38px;
+}
+.glass-input option {
+  background: #0f1322;
+  color: #e2e8f0;
+}
+/* date input calendar icon colour */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.6);
+  cursor: pointer;
+}
+
+/* ── Info chips (goals / players / file size) ─────────────── */
+.glass-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 9px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--app-text-secondary);
+}
+
+/* ── Player name pills ────────────────────────────────────── */
+.glass-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  font-size: 12px;
+  font-weight: 600;
+  max-width: 160px;
+  color: var(--app-text-secondary);
+}
+
+/* ── Team zones ───────────────────────────────────────────── */
+.team-zone {
+  border-radius: 14px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+.team-zone--blue   { background: rgba(96,165,250,0.05); border-color: rgba(96,165,250,0.12); }
+.team-zone--orange { background: rgba(251,146,60,0.05);  border-color: rgba(251,146,60,0.12); }
+
+/* ── Eyebrow pill (page header label) ────────────────────── */
+.eyebrow-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(96,165,250,0.1);
+  border: 1px solid rgba(96,165,250,0.22);
+  color: rgba(226,232,240,0.65);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+/* ── "Showing X of Y" meta strip ─────────────────────────── */
+.meta-strip {
+  display: flex;
+  align-items: center;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  font-size: 13px;
+  color: var(--app-text-faint);
+}
+
+/* ── Stat tiles (header summary row) ─────────────────────── */
+.stat-tile {
+  position: relative;
+  overflow: hidden;
+  border-radius: 16px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+}
+.stat-tile-glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 15% 40%, var(--stat-accent, #60a5fa) 0%, transparent 60%);
+  opacity: 0.1;
+  pointer-events: none;
+}
+
+/* ── Section heading ──────────────────────────────────────── */
+.section-heading {
+  font-size: 1.25rem;
+  font-weight: 900;
+  letter-spacing: -0.025em;
+  color: rgba(255,255,255,0.92);
+  line-height: 1.2;
+}
+
+/* ── Themed card gradient (outer section wrappers) ────────── */
+.theme-card-gradient {
+  background: linear-gradient(145deg, rgba(17,24,39,0.94), rgba(8,10,18,0.96) 55%, rgba(15,23,42,0.92));
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 20px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 18px 60px rgba(0,0,0,0.22);
+}
+
+/* ── Goal event cards ─────────────────────────────────────── */
+.goal-event-card {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  padding: 14px;
+  transition: background 0.15s, border-color 0.15s;
+}
+.goal-event-card:hover {
+  background: rgba(255,255,255,0.05);
+}
+.goal-event-card--blue {
+  background: rgba(96,165,250,0.06);
+  border-color: rgba(96,165,250,0.2);
+}
+.goal-event-card--blue:hover  { background: rgba(96,165,250,0.09); }
+.goal-event-card--orange {
+  background: rgba(251,146,60,0.06);
+  border-color: rgba(251,146,60,0.2);
+}
+.goal-event-card--orange:hover { background: rgba(251,146,60,0.09); }
+.goal-event-card__detail {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255,255,255,0.07);
+}
+
+/* ── Badge component ──────────────────────────────────────── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: 1px solid transparent;
+}
+.badge--neutral { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.12); color: rgba(226,232,240,0.65); }
+.badge--blue    { background: rgba(96,165,250,0.15);  border-color: rgba(96,165,250,0.3);   color: #93c5fd; }
+.badge--green   { background: rgba(52,211,153,0.15);  border-color: rgba(52,211,153,0.3);   color: #6ee7b7; }
+.badge--yellow  { background: rgba(250,204,21,0.15);  border-color: rgba(250,204,21,0.3);   color: #fde68a; }
+.badge--red     { background: rgba(248,113,113,0.15); border-color: rgba(248,113,113,0.3);  color: #fca5a5; }
+.badge--orange  { background: rgba(251,146,60,0.15);  border-color: rgba(251,146,60,0.3);   color: #fdba74; }
+
 @keyframes fade-in {
   from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -68,7 +354,6 @@
   width: 100%;
   height: 4px;
   border-radius: 4px;
-  /* background is set via inline style so the fill tracks the thumb perfectly */
   cursor: pointer;
   outline: none;
 }
