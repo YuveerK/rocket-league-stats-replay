@@ -1,0 +1,20 @@
+# Dependencies
+**/node_modules/
+
+# Environment files
+**/.env
+
+# Parser local-only artifacts
+parser/output/
+parser/replays/
+parser/tools/
+parser/generated/
+
+# API generated
+api/generated/
+
+# Frontend build
+frontend/dist/
+
+# Misc
+.DS_Store
