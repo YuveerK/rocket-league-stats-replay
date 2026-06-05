@@ -1,168 +1,168 @@
 import fs from "node:fs/promises";
-import { readOutput, readJsonFile } from "../repositories/output.repository.js";
-import { getReplayFiles, parseReplayHeader } from "../repositories/replay.repository.js";
-import { OUTPUT_DIR, REPLAY_LIBRARY_PATH, REPLAY_LIBRARY_DIR } from "../config/paths.js";
-import { toNumber, cleanPlatform, cleanMapName } from "../utils/format.js";
+import path from "node:path";
+import { prisma } from "../../lib/prisma.js";
+import { REPLAYS_DIR } from "../config/paths.js";
+import { activateReplay as activateReplayRecord, resolveReplay } from "../repositories/artifact.repository.js";
+import { cleanMapName } from "../utils/format.js";
 
-function summarizePlayers(players = []) {
-  return players.map((player) => ({
-    name: player.Name ?? "Unknown",
-    team: player.Team ?? null,
-    platform: cleanPlatform(player.Platform),
-    score: player.Score ?? 0,
-    goals: player.Goals ?? 0,
-    assists: player.Assists ?? 0,
-    saves: player.Saves ?? 0,
-    shots: player.Shots ?? 0,
-    bot: Boolean(player.bBot),
-  }));
+function toNumber(value) {
+  if (value == null) return null;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
 }
 
-function buildReplaySummary(parsedReplay, fileInfo, processedNames, activeReplayId) {
-  const properties = parsedReplay?.properties ?? {};
-  const players = summarizePlayers(properties.PlayerStats ?? []);
-  const replayId = properties.Id ?? null;
-  const team0Score =
-    properties.Team0Score ??
-    players.filter((p) => p.team === 0).reduce((sum, p) => sum + p.goals, 0);
-  const team1Score =
-    properties.Team1Score ??
-    players.filter((p) => p.team === 1).reduce((sum, p) => sum + p.goals, 0);
-  const totalSecondsPlayed = toNumber(properties.TotalSecondsPlayed);
-  const matchStartEpoch = toNumber(properties.MatchStartEpoch);
-  const winningTeam =
-    properties.WinningTeam ??
-    (team0Score === team1Score ? null : team0Score > team1Score ? 0 : 1);
-  const goals = Array.isArray(properties.Goals)
-    ? properties.Goals.map((goal) => ({
-        frame: goal.frame ?? null,
-        playerName: goal.PlayerName ?? "Unknown",
-        team: goal.PlayerTeam ?? null,
-      }))
-    : [];
+function mapReplayPlayer(matchPlayer) {
+  const player = matchPlayer.player;
+  return {
+    name: player.playerName,
+    team: matchPlayer.team,
+    platform: player.platform,
+    score: matchPlayer.score ?? 0,
+    goals: matchPlayer.goals ?? 0,
+    assists: matchPlayer.assists ?? 0,
+    saves: matchPlayer.saves ?? 0,
+    shots: matchPlayer.shots ?? 0,
+    bot: Boolean(player.isBot),
+  };
+}
+
+function resultWinningTeam(replay) {
+  if (replay.winningTeam != null) return replay.winningTeam;
+  if (replay.team0Score === replay.team1Score) return null;
+  return replay.team0Score > replay.team1Score ? 0 : 1;
+}
+
+function mapReplaySummary(replay, activeReplayId) {
+  const players = replay.matchPlayers.map(mapReplayPlayer);
+  const goals = replay.timelineEvents
+    .filter((event) => event.type === "goal")
+    .map((event) => ({
+      frame: event.frameIndex ?? null,
+      playerName: event.playerName ?? "Unknown",
+      team: event.team ?? null,
+    }));
+  const primaryPlayer = players.find((player) => player.name === replay.recorderName);
 
   return {
-    fileName: fileInfo.fileName,
-    replayPath: fileInfo.replayPath,
-    size: fileInfo.size,
-    modifiedAt: fileInfo.modifiedAt,
-    replayId,
-    replayName: properties.ReplayName ?? null,
-    mapName: properties.MapName ?? null,
-    mapDisplayName: cleanMapName(properties.MapName),
-    date: properties.Date ?? null,
-    matchStartEpoch,
-    matchType: properties.MatchType ?? null,
-    teamSize: properties.TeamSize ?? null,
-    unfairTeamSize: properties.UnfairTeamSize ?? null,
-    primaryPlayerName: properties.PlayerName ?? null,
-    primaryPlayerTeam: properties.PrimaryPlayerTeam ?? null,
-    totalSecondsPlayed,
-    overtime: totalSecondsPlayed !== null ? totalSecondsPlayed > 305 : false,
-    forfeit: properties.bForfeit === true,
-    team0Score,
-    team1Score,
-    winningTeam,
+    fileName: replay.fileName,
+    replayPath: path.join(REPLAYS_DIR, replay.fileName),
+    size: replay.fileSizeBytes ?? null,
+    modifiedAt: replay.uploadedAt?.toISOString() ?? replay.analyzedAt?.toISOString() ?? null,
+    replayId: replay.replayId,
+    replayName: replay.replayName,
+    mapName: replay.mapName,
+    mapDisplayName: cleanMapName(replay.mapName),
+    date: replay.date,
+    matchStartEpoch: toNumber(replay.matchStartEpoch),
+    matchType: replay.matchType,
+    teamSize: replay.teamSize,
+    unfairTeamSize: replay.unfairTeamSize,
+    primaryPlayerName: replay.recorderName,
+    primaryPlayerTeam: primaryPlayer?.team ?? null,
+    totalSecondsPlayed: replay.totalSecondsPlayed,
+    overtime: replay.overtime,
+    forfeit: replay.forfeit,
+    team0Score: replay.team0Score,
+    team1Score: replay.team1Score,
+    winningTeam: resultWinningTeam(replay),
     goalCount: goals.length,
     goals,
     players,
-    analyzed: processedNames.has(fileInfo.fileName),
-    current: replayId !== null && replayId === activeReplayId,
+    analyzed: true,
+    current: replay.replayId === activeReplayId,
+    analyzedAt: replay.analyzedAt?.toISOString() ?? null,
   };
 }
 
-export async function buildReplayLibrary({ refresh = false } = {}) {
-  const [files, cache, processedReplays, finalStats] = await Promise.all([
-    getReplayFiles(),
-    readJsonFile(REPLAY_LIBRARY_PATH, { entries: {} }),
-    readOutput("processed-replays.json").catch(() => []),
-    readOutput("final-player-stats.json").catch(() => null),
-  ]);
+function sortReplayTime(replay) {
+  if (typeof replay.matchStartEpoch === "number") return replay.matchStartEpoch;
+  const parsedDate = Date.parse(String(replay.date ?? "").replace(/(\d{4}-\d{2}-\d{2}) (\d{2})-(\d{2})-(\d{2})/, "$1T$2:$3:$4"));
+  if (Number.isFinite(parsedDate)) return parsedDate / 1000;
+  const parsedModified = Date.parse(replay.modifiedAt ?? "");
+  return Number.isFinite(parsedModified) ? parsedModified / 1000 : 0;
+}
 
-  const processedNames = new Set(Array.isArray(processedReplays) ? processedReplays : []);
-  const activeReplayId = finalStats?.replayId ?? null;
-  const cachedEntries = cache?.entries ?? {};
-  const nextCache = {};
-  const replays = [];
-
-  for (const file of files) {
-    const cached = cachedEntries[file.fileName];
-    const cacheHit =
-      !refresh &&
-      cached &&
-      cached.size === file.size &&
-      cached.mtimeMs === file.mtimeMs;
-
-    if (cacheHit) {
-      const replay = {
-        ...cached.summary,
-        replayPath: file.replayPath,
-        modifiedAt: file.modifiedAt,
-        analyzed: processedNames.has(file.fileName),
-        current: cached.summary.replayId !== null && cached.summary.replayId === activeReplayId,
-      };
-      nextCache[file.fileName] = { ...cached, summary: replay };
-      replays.push(replay);
-      continue;
-    }
-
-    try {
-      const parsedReplay = await parseReplayHeader(file.replayPath);
-      const summary = buildReplaySummary(parsedReplay, file, processedNames, activeReplayId);
-      nextCache[file.fileName] = {
-        size: file.size,
-        mtimeMs: file.mtimeMs,
-        indexedAt: new Date().toISOString(),
-        summary,
-      };
-      replays.push(summary);
-    } catch (error) {
-      const summary = {
-        fileName: file.fileName,
-        replayPath: file.replayPath,
-        size: file.size,
-        modifiedAt: file.modifiedAt,
-        analyzed: processedNames.has(file.fileName),
-        current: false,
-        parseError: error.message,
-        players: [],
-        goals: [],
-      };
-      nextCache[file.fileName] = {
-        size: file.size,
-        mtimeMs: file.mtimeMs,
-        indexedAt: new Date().toISOString(),
-        summary,
-      };
-      replays.push(summary);
-    }
+async function scanUnanalyzedReplays(analyzedFileNames) {
+  const known = new Set(analyzedFileNames);
+  let entries;
+  try {
+    entries = await fs.readdir(REPLAYS_DIR, { withFileTypes: true });
+  } catch {
+    return [];
   }
 
-  await fs.mkdir(OUTPUT_DIR, { recursive: true });
-  await fs.writeFile(
-    REPLAY_LIBRARY_PATH,
-    JSON.stringify({ generatedAt: new Date().toISOString(), entries: nextCache }, null, 2),
-    "utf8",
-  );
+  const unanalyzed = [];
+  for (const entry of entries) {
+    if (!entry.isFile() || !entry.name.toLowerCase().endsWith(".replay")) continue;
+    if (known.has(entry.name)) continue;
+    try {
+      const stat = await fs.stat(path.join(REPLAYS_DIR, entry.name));
+      unanalyzed.push({
+        fileName: entry.name,
+        replayPath: path.join(REPLAYS_DIR, entry.name),
+        size: stat.size,
+        modifiedAt: stat.mtime.toISOString(),
+        analyzed: false,
+        current: false,
+      });
+    } catch {
+      // skip files we can't stat
+    }
+  }
+  return unanalyzed;
+}
 
-  const sortTime = (replay) => {
-    if (typeof replay.matchStartEpoch === "number") return replay.matchStartEpoch;
-    const parsed = Date.parse(replay.modifiedAt ?? "");
-    return Number.isFinite(parsed) ? parsed / 1000 : 0;
-  };
+export async function buildReplayLibrary({ refresh = false } = {}) {
+  const [activeReplay, replays] = await Promise.all([
+    resolveReplay(),
+    prisma.replay.findMany({
+      where: { analyzedAt: { not: null } },
+      include: {
+        matchPlayers: {
+          include: {
+            player: {
+              select: {
+                playerName: true,
+                platform: true,
+                isBot: true,
+              },
+            },
+          },
+          orderBy: [{ team: "asc" }, { score: "desc" }],
+        },
+        timelineEvents: {
+          where: { type: "goal" },
+          orderBy: { frameIndex: "asc" },
+        },
+      },
+      orderBy: { analyzedAt: "desc" },
+    }),
+  ]);
 
-  replays.sort((a, b) => sortTime(b) - sortTime(a));
+  const analyzedSummaries = replays
+    .map((replay) => mapReplaySummary(replay, activeReplay?.replayId ?? null))
+    .sort((a, b) => sortReplayTime(b) - sortReplayTime(a));
+
+  const unanalyzed = refresh
+    ? await scanUnanalyzedReplays(analyzedSummaries.map((r) => r.fileName))
+    : [];
+
+  const summaries = [...analyzedSummaries, ...unanalyzed];
 
   return {
     generatedAt: new Date().toISOString(),
-    sourceDir: REPLAY_LIBRARY_DIR,
-    replays,
+    sourceDir: REPLAYS_DIR,
+    replays: summaries,
     summary: {
-      total: replays.length,
-      analyzed: replays.filter((r) => r.analyzed).length,
-      overtime: replays.filter((r) => r.overtime).length,
-      forfeits: replays.filter((r) => r.forfeit).length,
-      maps: new Set(replays.map((r) => r.mapName).filter(Boolean)).size,
+      total: summaries.length,
+      analyzed: analyzedSummaries.length,
+      overtime: analyzedSummaries.filter((r) => r.overtime).length,
+      forfeits: analyzedSummaries.filter((r) => r.forfeit).length,
+      maps: new Set(analyzedSummaries.map((r) => r.mapName).filter(Boolean)).size,
     },
   };
+}
+
+export async function setActiveReplay(replayId) {
+  return activateReplayRecord(replayId);
 }
