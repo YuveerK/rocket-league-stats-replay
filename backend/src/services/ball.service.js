@@ -1,4 +1,4 @@
-import { readOutput } from "../repositories/output.repository.js";
+import { readReplayArtifacts } from "../repositories/artifact.repository.js";
 import { pct } from "../utils/format.js";
 import {
   BALL_MIDFIELD_BAND_Y,
@@ -127,12 +127,11 @@ function buildBallDerivedStats(samples) {
   return stats;
 }
 
-export async function getBallData() {
-  const [ballStats, ballTimeline, matchMeta] = await Promise.all([
-    readOutput("ball-stats.json"),
-    readOutput("ball-position-timeline.json"),
-    readOutput("match-meta.json"),
-  ]);
+export async function getBallData({ replayId = null } = {}) {
+  const [ballStats, ballTimeline, matchMeta] = await readReplayArtifacts(
+    ["ball-stats.json", "ball-position-timeline.json", "match-meta.json"],
+    { replayId },
+  );
 
   if (!ballStats && !ballTimeline) return null;
 

@@ -1,4 +1,4 @@
-import { readOutput } from "../repositories/output.repository.js";
+import { readReplayArtifacts } from "../repositories/artifact.repository.js";
 
 const ZONE_DEF_THIRD = -5120 + 10240 / 3; // ≈ -1707
 const ZONE_ATT_THIRD = 5120 - 10240 / 3;  // ≈  1707
@@ -27,12 +27,11 @@ function computePlayerZones(player) {
   };
 }
 
-export async function getHeatmapData() {
-  const [positions, manifest, mapping] = await Promise.all([
-    readOutput("player-position-timeline.json"),
-    readOutput("heatmaps/heatmap-manifest.json"),
-    readOutput("player-mapping.json"),
-  ]);
+export async function getHeatmapData({ replayId = null } = {}) {
+  const [positions, manifest, mapping] = await readReplayArtifacts(
+    ["player-position-timeline.json", "heatmaps/heatmap-manifest.json", "player-mapping.json"],
+    { replayId },
+  );
 
   if (!positions) return null;
 

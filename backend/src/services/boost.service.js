@@ -1,4 +1,4 @@
-import { readOutput } from "../repositories/output.repository.js";
+import { readReplayArtifacts } from "../repositories/artifact.repository.js";
 import { sumBy, roundBoostValue, median, carDisplayName } from "../utils/format.js";
 import {
   BOOST_PAD_VALUES,
@@ -291,13 +291,11 @@ export function buildBoostPadSummaries(events = [], mapName = null) {
 
 // ── Public service methods ────────────────────────────────────────────────────
 
-export async function getBoostTeamData() {
-  const [boostStats, pickupStats, finalStats, matchMeta] = await Promise.all([
-    readOutput("boost-stats-v2.json"),
-    readOutput("boost-pickup-stats-v2.json"),
-    readOutput("final-player-stats.json"),
-    readOutput("match-meta.json"),
-  ]);
+export async function getBoostTeamData({ replayId = null } = {}) {
+  const [boostStats, pickupStats, finalStats, matchMeta] = await readReplayArtifacts(
+    ["boost-stats-v2.json", "boost-pickup-stats-v2.json", "final-player-stats.json", "match-meta.json"],
+    { replayId },
+  );
 
   if (!boostStats && !finalStats) return null;
 
@@ -401,16 +399,19 @@ export async function getBoostTeamData() {
   };
 }
 
-export async function getBoostPlayersData() {
+export async function getBoostPlayersData({ replayId = null } = {}) {
   const [boostStats, pickupStats, finalStats, matchMeta, playerMapping, advancedStats] =
-    await Promise.all([
-      readOutput("boost-stats-v2.json"),
-      readOutput("boost-pickup-stats-v2.json"),
-      readOutput("final-player-stats.json"),
-      readOutput("match-meta.json"),
-      readOutput("player-mapping.json"),
-      readOutput("advanced-player-stats.json"),
-    ]);
+    await readReplayArtifacts(
+      [
+        "boost-stats-v2.json",
+        "boost-pickup-stats-v2.json",
+        "final-player-stats.json",
+        "match-meta.json",
+        "player-mapping.json",
+        "advanced-player-stats.json",
+      ],
+      { replayId },
+    );
 
   if (!boostStats && !finalStats) return null;
 
@@ -485,12 +486,11 @@ export async function getBoostPlayersData() {
   };
 }
 
-export async function getBoostPickupsData() {
-  const [pickupStats, finalStats, matchMeta] = await Promise.all([
-    readOutput("boost-pickup-stats-v2.json"),
-    readOutput("final-player-stats.json"),
-    readOutput("match-meta.json"),
-  ]);
+export async function getBoostPickupsData({ replayId = null } = {}) {
+  const [pickupStats, finalStats, matchMeta] = await readReplayArtifacts(
+    ["boost-pickup-stats-v2.json", "final-player-stats.json", "match-meta.json"],
+    { replayId },
+  );
 
   if (!pickupStats) return null;
 

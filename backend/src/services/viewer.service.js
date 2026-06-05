@@ -2,7 +2,7 @@ import {
   CANONICAL_BOOST_PAD_SNAP_DISTANCE,
   STANDARD_SOCCAR_BOOST_PADS,
 } from "../config/constants.js";
-import { readOutput } from "../repositories/output.repository.js";
+import { readReplayArtifacts } from "../repositories/artifact.repository.js";
 import { watchNumber, watchRound } from "../utils/format.js";
 
 function snapBoostPadIndex(location) {
@@ -243,17 +243,20 @@ function buildWatchResetSegments(timeline) {
     .filter(Boolean);
 }
 
-export async function getWatchData() {
+export async function getWatchData({ replayId = null } = {}) {
   const [positions, ballTimeline, finalStats, timeline, matchMeta, playerMapping, pickupStats] =
-    await Promise.all([
-      readOutput("player-position-timeline.json"),
-      readOutput("ball-position-timeline.json"),
-      readOutput("final-player-stats.json"),
-      readOutput("game-timeline.json"),
-      readOutput("match-meta.json"),
-      readOutput("player-mapping.json"),
-      readOutput("boost-pickup-stats-v2.json"),
-    ]);
+    await readReplayArtifacts(
+      [
+        "player-position-timeline.json",
+        "ball-position-timeline.json",
+        "final-player-stats.json",
+        "game-timeline.json",
+        "match-meta.json",
+        "player-mapping.json",
+        "boost-pickup-stats-v2.json",
+      ],
+      { replayId },
+    );
 
   if (!positions || !ballTimeline) return null;
 
