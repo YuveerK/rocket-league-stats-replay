@@ -1,4 +1,4 @@
-import { BatteryCharging, Database, Gauge, Layers, Zap } from 'lucide-react'
+import { BatteryCharging, Database, Gauge, Layers } from 'lucide-react'
 import { fmt } from '@/lib/formatters'
 import { BLUE, ORANGE } from '@/lib/colors'
 

@@ -3,6 +3,8 @@ import { Swords } from 'lucide-react'
 import { fmt, shortName } from '@/lib/formatters'
 import { TEAM_COLORS } from '@/lib/colors'
 
+const EMPTY_CELLS = []
+
 function cellTone(count, max) {
   if (!count) return { bg: 'rgba(255,255,255,0.02)', text: 'rgba(255,255,255,0.12)' }
   const intensity = Math.min(1, count / Math.max(1, max))
@@ -15,7 +17,7 @@ function cellTone(count, max) {
 
 export default function DemoMatrix({ matrix, players = [] }) {
   const names = matrix?.players?.length ? matrix.players : players.map((p) => p.playerName)
-  const cells = matrix?.cells ?? []
+  const cells = matrix?.cells ?? EMPTY_CELLS
   const maxCount = Math.max(1, ...cells.map((c) => c.count))
 
   const playerMeta = useMemo(() => {

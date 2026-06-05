@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import {
-  Bar, BarChart, CartesianGrid, Cell, Legend, Tooltip, XAxis, YAxis,
+  Bar, BarChart, CartesianGrid, Legend, Tooltip, XAxis, YAxis,
 } from 'recharts'
 import {
   Activity, BatteryCharging, Clock, Database, Gauge, Layers,
@@ -21,6 +21,8 @@ const HEADER_GRADIENT =
   'radial-gradient(circle at 17% 0%, rgba(96,165,250,0.20), transparent 31%), ' +
   'radial-gradient(circle at 84% 0%, rgba(52,211,153,0.14), transparent 32%), ' +
   'linear-gradient(135deg,#080b16 0%,#05070f 58%,#080b16 100%)'
+
+const EMPTY_TEAM = {}
 
 function fmtAuto(value) {
   return fmt(value, value % 1 ? 1 : 0)
@@ -151,8 +153,8 @@ export default function BoostTeam() {
   const status = loading ? 'loading' : (error || !data) ? 'empty' : 'ready'
 
   const teams   = useMemo(() => data?.teams ?? [], [data])
-  const blue    = teams.find((t) => t.team === 0) ?? {}
-  const orange  = teams.find((t) => t.team === 1) ?? {}
+  const blue    = useMemo(() => teams.find((t) => t.team === 0) ?? EMPTY_TEAM, [teams])
+  const orange  = useMemo(() => teams.find((t) => t.team === 1) ?? EMPTY_TEAM, [teams])
   const players = useMemo(() => (
     [...(data?.players ?? [])].sort((a, b) => a.team - b.team || b.boostCollectedApprox - a.boostCollectedApprox)
   ), [data])

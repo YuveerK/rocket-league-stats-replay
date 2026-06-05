@@ -56,11 +56,6 @@ function resultTone(result) {
   return RESULT[result] ?? RESULT.draw
 }
 
-function statDelta(value) {
-  const number = n(value)
-  return number > 0 ? `+${fmt(number)}` : fmt(number)
-}
-
 function SelectPanel({ players, selected, selectedPlayer, onSelect, totalMatches }) {
   return (
     <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.04] p-5">
