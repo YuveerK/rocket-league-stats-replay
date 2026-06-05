@@ -40,14 +40,34 @@ model Replay {
   winningTeam        Int?
   team0Score         Int     @default(0)
   team1Score         Int     @default(0)
+  fileSizeBytes      Int?
+  uploadedAt         DateTime?
+  analyzedAt         DateTime?
+  activeAt           DateTime?
 
-  matchPlayers   MatchPlayer[]
-  ballStats      BallStats?
-  timelineEvents TimelineEvent[]
-  highlights     Highlight[]
-  heatmaps       Heatmap[]
+  matchPlayers      MatchPlayer[]
+  ballStats         BallStats?
+  timelineEvents    TimelineEvent[]
+  highlights        Highlight[]
+  heatmaps          Heatmap[]
+  analysisArtifacts ReplayAnalysisArtifact[]
 
   @@map("replays")
+}
+
+model ReplayAnalysisArtifact {
+  id        Int      @id @default(autoincrement())
+  replayId  String
+  key       String
+  payload   Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  replay Replay @relation(fields: [replayId], references: [replayId], onDelete: Cascade)
+
+  @@unique([replayId, key])
+  @@index([key])
+  @@map("replay_analysis_artifacts")
 }
 
 model MatchPlayer {
