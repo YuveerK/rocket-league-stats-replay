@@ -14,11 +14,15 @@ import {
 import {
   Activity,
   BarChart3,
+  BatteryCharging,
   CalendarDays,
   ChevronDown,
   Crosshair,
+  Filter,
+  Layers,
   Map as MapIcon,
   Shield,
+  ShieldAlert,
   Star,
   Target,
   Trophy,
@@ -266,6 +270,43 @@ function ScoreCell({ match }) {
   )
 }
 
+function CareerFilters({ filterOptions, playlist, mapName, onPlaylist, onMap }) {
+  return (
+    <div className="flex flex-wrap items-end gap-4 rounded-2xl border border-white/[0.08] bg-white/[0.04] p-4">
+      <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-white/35">
+        <Filter size={14} className="text-blue-300" />
+        Filters
+      </div>
+      <label className="min-w-[160px]">
+        <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-white/30">Playlist</span>
+        <select
+          value={playlist}
+          onChange={(e) => onPlaylist(e.target.value)}
+          className="w-full appearance-none rounded-xl border border-white/[0.1] bg-[#0a0e19] px-3 py-2 text-sm font-bold text-white outline-none focus:border-blue-300/50"
+        >
+          <option value="all">All playlists</option>
+          {(filterOptions?.playlists ?? []).map((id) => (
+            <option key={id} value={String(id)}>{playlistLabel(id)}</option>
+          ))}
+        </select>
+      </label>
+      <label className="min-w-[200px] flex-1">
+        <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-white/30">Map</span>
+        <select
+          value={mapName}
+          onChange={(e) => onMap(e.target.value)}
+          className="w-full appearance-none rounded-xl border border-white/[0.1] bg-[#0a0e19] px-3 py-2 text-sm font-bold text-white outline-none focus:border-blue-300/50"
+        >
+          <option value="all">All maps</option>
+          {(filterOptions?.maps ?? []).map((map) => (
+            <option key={map} value={map}>{mapLabel(map)}</option>
+          ))}
+        </select>
+      </label>
+    </div>
+  )
+}
+
 function MatchTable({ matches }) {
   if (!matches.length) {
     return <div className="py-10 text-center text-sm text-white/30">No matches found for this player.</div>
@@ -287,6 +328,9 @@ function MatchTable({ matches }) {
             <th className="px-3 py-3 text-right">Sv</th>
             <th className="px-3 py-3 text-right">Sh%</th>
             <th className="px-3 py-3 text-right">BPM</th>
+            <th className="px-3 py-3 text-right">Used</th>
+            <th className="px-3 py-3 text-right">Pads</th>
+            <th className="px-3 py-3 text-right">Demos</th>
           </tr>
         </thead>
         <tbody>
@@ -315,6 +359,9 @@ function MatchTable({ matches }) {
               <td className="stat-num px-3 py-3 text-right text-white/70">{fmt(match.saves)}</td>
               <td className="stat-num px-3 py-3 text-right text-white/48">{fmt(match.shootingPercentage, 0)}%</td>
               <td className="stat-num px-3 py-3 text-right text-white/48">{fmt(match.bpm, 0)}</td>
+              <td className="stat-num px-3 py-3 text-right text-white/45">{fmt(match.boostUsed, 0)}</td>
+              <td className="stat-num px-3 py-3 text-right text-sky-300/80">{fmt((match.bigPads ?? 0) + (match.smallPads ?? 0))}</td>
+              <td className="stat-num px-3 py-3 text-right text-rose-300/80">{match.netDemos > 0 ? `+${fmt(match.netDemos)}` : fmt(match.netDemos)}</td>
             </tr>
           ))}
         </tbody>
@@ -357,6 +404,8 @@ export default function CareerStats() {
   const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [playlistFilter, setPlaylistFilter] = useState('all')
+  const [mapFilter, setMapFilter] = useState('all')
 
   useEffect(() => {
     let cancelled = false
@@ -392,7 +441,10 @@ export default function CareerStats() {
       }
     })
 
-    apiGet(`/api/career/stats?player=${encodeURIComponent(selected)}`)
+    const params = new URLSearchParams({ player: selected })
+    if (playlistFilter !== 'all') params.set('playlist', playlistFilter)
+    if (mapFilter !== 'all') params.set('map', mapFilter)
+    apiGet(`/api/career/stats?${params}`)
       .then((data) => {
         if (!cancelled) setStats(data)
       })
@@ -409,7 +461,7 @@ export default function CareerStats() {
     return () => {
       cancelled = true
     }
-  }, [selected])
+  }, [selected, playlistFilter, mapFilter])
 
   const selectedPlayer = useMemo(
     () => players.find((player) => player.playerName === selected),
@@ -432,6 +484,12 @@ export default function CareerStats() {
     saves: n(row.saves),
     winRate: n(row.winRate),
   })), [trend])
+  const boostTrendRows = useMemo(() => (activeStats?.boostTrend ?? []).map((row) => ({
+    ...row,
+    match: `#${row.index}`,
+    padTotal: n(row.pickups),
+  })), [activeStats])
+
   const mapRows = useMemo(() => mapStats.slice(0, 8).map((map) => ({
     ...map,
     label: shortName(mapLabel(map.mapName), 20),
@@ -484,6 +542,21 @@ export default function CareerStats() {
 
       {summary && !isLoading && !error && (
         <main className="mx-auto max-w-7xl space-y-6 px-8 py-8">
+          <CareerFilters
+            filterOptions={activeStats?.filterOptions}
+            playlist={playlistFilter}
+            mapName={mapFilter}
+            onPlaylist={setPlaylistFilter}
+            onMap={setMapFilter}
+          />
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <HeroMetric label="Boost used / match" value={fmt(summary.avgBoostUsed, 1)} detail={`${fmt(summary.totalBoostUsed)} total units`} color={ORANGE} Icon={BatteryCharging} />
+            <HeroMetric label="Pad pickups / match" value={fmt(summary.avgPickups, 1)} detail={`${fmt(summary.totalBigPads)} big · ${fmt(summary.totalSmallPads)} small`} color={BLUE} Icon={Layers} />
+            <HeroMetric label="Demo differential" value={summary.netDemos > 0 ? `+${fmt(summary.netDemos)}` : fmt(summary.netDemos)} detail={`${fmt(summary.totalKills)} inflicted · ${fmt(summary.totalDeaths)} taken`} color={RED} Icon={ShieldAlert} />
+            <HeroMetric label="Boost stolen / match" value={fmt(summary.avgBoostStolen, 1)} detail={`${fmt(summary.totalBoostStolen)} stolen pad events`} color={GOLD} Icon={Zap} />
+          </div>
+
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.3fr)_minmax(340px,0.7fr)]">
             <Panel
               eyebrow="Form curve"
@@ -650,14 +723,31 @@ export default function CareerStats() {
               </div>
             </Panel>
 
-            <Panel eyebrow="Boost and pace" title="Movement efficiency" Icon={Zap} accent={GOLD}>
+            <Panel eyebrow="Boost economy" title="Boost & pad trends" subtitle="Collected vs used and pad volume over career sample" Icon={BatteryCharging} accent={ORANGE}>
+              <MeasuredChart height={300}>
+                {({ width, height }) => (
+                  <ComposedChart width={width} height={height} data={boostTrendRows} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+                    <CartesianGrid stroke="rgba(255,255,255,0.06)" vertical={false} />
+                    <XAxis dataKey="match" tick={{ fill: 'rgba(255,255,255,0.35)', fontSize: 10, fontWeight: 700 }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fill: 'rgba(255,255,255,0.28)', fontSize: 11 }} axisLine={false} tickLine={false} width={42} />
+                    <Tooltip content={<ChartTooltip formatter={(v) => fmt(v, 1)} />} />
+                    <Legend wrapperStyle={{ color: 'rgba(255,255,255,0.45)', fontSize: 11 }} />
+                    <Bar dataKey="boostCollected" name="Collected" fill={GREEN} radius={[5, 5, 0, 0]} barSize={7} />
+                    <Bar dataKey="boostUsed" name="Used" fill={ORANGE} radius={[5, 5, 0, 0]} barSize={7} />
+                    <Line type="monotone" dataKey="padTotal" name="Pads" stroke={BLUE} strokeWidth={2} dot={false} />
+                  </ComposedChart>
+                )}
+              </MeasuredChart>
+            </Panel>
+
+            <Panel eyebrow="Boost and pace" title="Movement & boost profile" Icon={Zap} accent={GOLD}>
               <div className="grid grid-cols-1 gap-x-8 md:grid-cols-2">
-                <ProgressMetric label="Average boost" value={summary.avgBoost} max={100} suffix="%" color={GOLD} detail="Average boost held during replay samples" />
-                <ProgressMetric label="Supersonic time" value={summary.avgSupersonicPct} max={100} suffix="%" color={BLUE} detail="Share of time at supersonic speed" />
-                <ProgressMetric label="Airborne time" value={summary.avgAirbornePct} max={100} suffix="%" color={PURPLE} detail="Share of time off the ground" />
-                <ProgressMetric label="Boost per minute" value={summary.avgBpm} max={Math.max(1200, summary.avgBpm)} color={ORANGE} detail="Average boost consumed per minute" />
-                <ProgressMetric label="Total demos" value={summary.totalKills} max={Math.max(10, summary.totalKills)} color={RED} detail={`${fmt(summary.totalKills)} demolitions recorded`} />
-                <ProgressMetric label="Point differential proxy" value={summary.avgScore - 300} max={Math.max(600, Math.abs(summary.avgScore - 300))} color={summary.avgScore >= 300 ? GREEN : RED} detail={`${statDelta(summary.avgScore - 300)} vs 300 score baseline`} />
+                <ProgressMetric label="Boost collected / match" value={summary.avgBoostCollected} max={Math.max(800, summary.avgBoostCollected)} color={GREEN} detail={`${fmt(summary.totalBoostCollected)} total collected`} />
+                <ProgressMetric label="Boost used / match" value={summary.avgBoostUsed} max={Math.max(800, summary.avgBoostUsed)} color={ORANGE} detail={`${fmt(summary.totalBoostUsed)} total used`} />
+                <ProgressMetric label="Big pads / match" value={summary.avgBigPads} max={Math.max(12, summary.avgBigPads)} color={BLUE} detail={`${fmt(summary.totalBigPads)} career big pads`} />
+                <ProgressMetric label="Small pads / match" value={summary.avgSmallPads} max={Math.max(40, summary.avgSmallPads)} color={PURPLE} detail={`${fmt(summary.totalSmallPads)} career small pads`} />
+                <ProgressMetric label="Average boost held" value={summary.avgBoost} max={100} suffix="%" color={GOLD} detail="Average boost meter during samples" />
+                <ProgressMetric label="Net demos / match" value={summary.avgNetDemos} max={Math.max(5, Math.abs(summary.avgNetDemos))} color={summary.avgNetDemos >= 0 ? GREEN : RED} detail={`${fmt(summary.totalKills)} inflicted · ${fmt(summary.totalDeaths)} taken`} />
               </div>
             </Panel>
           </div>
