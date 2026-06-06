@@ -14,7 +14,7 @@ import { fmt, fmtPct, shortName } from '@/lib/formatters'
 import { usePlayerCompare } from '@/features/career/hooks/usePlayerCompare'
 import { COMPARE_HEADER_GRADIENT } from '@/features/career/constants'
 import { ComparePicker } from '@/features/career/components/ComparePicker'
-import { CompareEmptyState } from '@/features/career/components/CompareEmptyState'
+import { CareerEmptyState } from '@/features/career/components/CareerEmptyState'
 import { ComparePlayerCard } from '@/features/career/components/ComparePlayerCard'
 import { StatDuelTable } from '@/features/career/components/StatDuelTable'
 import { SharedSummary } from '@/features/career/components/SharedSummary'
@@ -58,10 +58,10 @@ export default function PlayerCompare() {
         )}
       </PageHeader>
 
-      {isLoading && <CompareEmptyState title="Loading player comparison" detail="Building career, shared-match, map and roster overlap splits..." tone={BLUE} />}
-      {!isLoading && needsSecondPlayer && <CompareEmptyState title="Need two players" detail="Import replays with at least two non-bot players to use Player Compare." tone={GOLD} />}
-      {!isLoading && samePlayer && <CompareEmptyState title="Choose two different players" detail="Player Compare needs two distinct player profiles." tone={GOLD} />}
-      {!isLoading && error && !samePlayer && <CompareEmptyState title="Comparison unavailable" detail={error} tone={RED} />}
+      {isLoading && <CareerEmptyState Icon={GitCompareArrows} title="Loading player comparison" detail="Building career, shared-match, map and roster overlap splits..." tone={BLUE} />}
+      {!isLoading && needsSecondPlayer && <CareerEmptyState Icon={GitCompareArrows} title="Need two players" detail="Import replays with at least two non-bot players to use Player Compare." tone={GOLD} />}
+      {!isLoading && samePlayer && <CareerEmptyState Icon={GitCompareArrows} title="Choose two different players" detail="Player Compare needs two distinct player profiles." tone={GOLD} />}
+      {!isLoading && error && !samePlayer && <CareerEmptyState Icon={GitCompareArrows} title="Comparison unavailable" detail={error} tone={RED} />}
 
       {activeCompare && !isLoading && !error && !samePlayer && (
         <main className="mx-auto max-w-7xl space-y-6 px-8 py-8">
