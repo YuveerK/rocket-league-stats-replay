@@ -19,7 +19,7 @@
     {
       "label": "Start Frontend",
       "type": "shell",
-      "command": "npm run dev",
+      "command": "npm run dev -- --host",
       "options": {
         "cwd": "${workspaceFolder}/frontend"
       },
