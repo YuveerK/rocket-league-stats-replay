@@ -1,13 +1,13 @@
-import { useState } from 'react'
-import ReplayPage from '@/components/layout/ReplayPage'
-import { useBoostPickups } from '@/features/boost/hooks/useBoostPickups'
-import { BoostPickupsHeader } from '@/features/boost/components/BoostPickupsHeader'
-import { TeamHeatmapColumns } from '@/features/boost/components/TeamHeatmapColumns'
-import { HeatmapLegendFooter } from '@/features/boost/components/HeatmapLegendFooter'
+import { useState } from "react";
+import ReplayPage from "@/components/layout/ReplayPage";
+import { useBoostPickups } from "@/features/boost/hooks/useBoostPickups";
+import { BoostPickupsHeader } from "@/features/boost/components/BoostPickupsHeader";
+import { TeamHeatmapColumns } from "@/features/boost/components/TeamHeatmapColumns";
+import { HeatmapLegendFooter } from "@/features/boost/components/HeatmapLegendFooter";
 
 export default function BoostPickups() {
-  const [filter, setFilter] = useState('all')
-  const { status, meta, players, pads, metrics, analysis } = useBoostPickups()
+  const [filter, setFilter] = useState("all");
+  const { status, meta, players, pads, metrics, analysis } = useBoostPickups();
 
   return (
     <ReplayPage status={status} analysis={analysis} error={null}>
@@ -25,5 +25,5 @@ export default function BoostPickups() {
         </main>
       </div>
     </ReplayPage>
-  )
+  );
 }

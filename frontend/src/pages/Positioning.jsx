@@ -1,22 +1,26 @@
-import ReplayPage from '@/components/layout/ReplayPage'
-import { PlayerDistancePanel } from '@/features/positioning/components/PlayerDistancePanel'
-import { PlayerPositionProfilesPanel } from '@/features/positioning/components/PlayerPositionProfilesPanel'
-import { PositioningHeader } from '@/features/positioning/components/PositioningHeader'
-import { TeamBallProximityPanel } from '@/features/positioning/components/TeamBallProximityPanel'
-import { TeamFieldControlPanel } from '@/features/positioning/components/TeamFieldControlPanel'
-import { usePositioningAnalytics } from '@/features/positioning/hooks/usePositioningAnalytics'
+import ReplayPage from "@/components/layout/ReplayPage";
+import { PlayerDistancePanel } from "@/features/positioning/components/PlayerDistancePanel";
+import { PlayerPositionProfilesPanel } from "@/features/positioning/components/PlayerPositionProfilesPanel";
+import { PositioningHeader } from "@/features/positioning/components/PositioningHeader";
+import { TeamBallProximityPanel } from "@/features/positioning/components/TeamBallProximityPanel";
+import { TeamFieldControlPanel } from "@/features/positioning/components/TeamFieldControlPanel";
+import { usePositioningAnalytics } from "@/features/positioning/hooks/usePositioningAnalytics";
 
 export default function Positioning() {
-  const { data, error, status, analysis, model } = usePositioningAnalytics()
+  const { data, error, status, analysis, model } = usePositioningAnalytics();
 
-  if (status !== 'ready') {
-    return <ReplayPage status={status} analysis={analysis} error={error} />
+  if (status !== "ready") {
+    return <ReplayPage status={status} analysis={analysis} error={error} />;
   }
 
   return (
     <ReplayPage status={status} analysis={analysis} error={error}>
       <div className="anim-fade-in">
-        <PositioningHeader data={data} model={model} onUpload={analysis.handleAnalysisStart} />
+        <PositioningHeader
+          data={data}
+          model={model}
+          onUpload={analysis.handleAnalysisStart}
+        />
 
         <main className="mx-auto max-w-7xl space-y-6 px-8 py-8">
           <section className="grid grid-cols-1 gap-5 xl:grid-cols-[1.2fr_0.8fr]">
@@ -29,5 +33,5 @@ export default function Positioning() {
         </main>
       </div>
     </ReplayPage>
-  )
+  );
 }
