@@ -24,8 +24,8 @@ export default function Ball() {
           model={model}
         />
 
-        <main className="mx-auto max-w-7xl space-y-6 px-8 py-8">
-          <section className="grid grid-cols-1 gap-5 xl:grid-cols-[1.55fr_0.85fr]">
+        <main className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-8 sm:py-8">
+          <section className="grid grid-cols-1 gap-5 lg:grid-cols-[1.55fr_0.85fr]">
             <BallHeatmapSection
               data={data}
               mode={mode}
@@ -35,7 +35,7 @@ export default function Ball() {
             <BallProfilePanel data={data} model={model} />
           </section>
 
-          <section className="grid grid-cols-1 gap-5 xl:grid-cols-[0.95fr_1.05fr]">
+          <section className="grid grid-cols-1 gap-5 lg:grid-cols-[0.95fr_1.05fr]">
             <PressurePanel pressure={data.pressure} />
             <TerritoryPanel
               territoryData={model.territoryData}

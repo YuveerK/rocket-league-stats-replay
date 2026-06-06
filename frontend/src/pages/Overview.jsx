@@ -90,7 +90,7 @@ function MatchHero({ match }) {
         />
       </div>
 
-      <div className="relative px-8 py-8 flex flex-col gap-5 max-w-7xl mx-auto">
+      <div className="relative px-4 py-6 flex flex-col gap-5 max-w-7xl mx-auto sm:px-8 sm:py-8">
         <div className="flex items-start justify-between gap-4">
           <div>
             <h1 className="text-lg font-bold text-white/90 leading-tight truncate max-w-lg">
@@ -159,7 +159,7 @@ function ScoreDisplay({ match }) {
           Blue
         </span>
         <span
-          className="text-7xl font-black tabular-nums leading-none"
+          className="text-5xl font-black tabular-nums leading-none sm:text-7xl"
           style={{
             color: "#60a5fa",
             textShadow: "0 0 40px rgba(96,165,250,0.5)",
@@ -170,7 +170,7 @@ function ScoreDisplay({ match }) {
       </div>
 
       <div className="flex flex-col items-center gap-2">
-        <span className="text-3xl font-thin text-white/20">—</span>
+        <span className="text-2xl font-thin text-white/20 sm:text-3xl">—</span>
         <div className="flex gap-1.5">
           {match.overtime && (
             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider bg-yellow-500/15 text-yellow-400 border border-yellow-500/25">
@@ -190,7 +190,7 @@ function ScoreDisplay({ match }) {
           Orange
         </span>
         <span
-          className="text-7xl font-black tabular-nums leading-none"
+          className="text-5xl font-black tabular-nums leading-none sm:text-7xl"
           style={{
             color: "#fb923c",
             textShadow: "0 0 40px rgba(251,146,60,0.5)",
@@ -224,7 +224,7 @@ export default function Overview() {
       {!loading && data && (
         <div className="anim-fade-in">
           <MatchHero match={data.match} />
-          <div className="px-8 py-8 space-y-6 max-w-7xl mx-auto">
+          <div className="px-4 py-6 space-y-6 max-w-7xl mx-auto sm:px-8 sm:py-8">
             <Scoreboard players={data.players} />
             <BoostEconomyPanel teams={data.teams} players={data.players} />
             <GoalBreakdown goals={data.goalBreakdown} />

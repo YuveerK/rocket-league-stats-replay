@@ -359,7 +359,7 @@ export default function Heatmaps() {
         </div>
 
         {/* ── Main layout ───────────────────────────────────────────── */}
-        <div className="grid grid-cols-[320px_1fr] gap-6 items-start">
+        <div className="grid grid-cols-1 gap-6 items-start lg:grid-cols-[320px_1fr]">
           {/* ── Left: Heatmap + Controls ─────────────────────────── */}
           <div className="card p-0 overflow-hidden">
             {/* Player badge */}

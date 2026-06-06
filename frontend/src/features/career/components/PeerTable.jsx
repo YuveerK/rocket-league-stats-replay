@@ -28,17 +28,17 @@ export function PeerTable({ title, rows, relation, accent, subtitle }) {
         <PeerBarsChart rows={rows} relation={relation} />
 
         <div className="max-h-[430px] overflow-auto">
-          <table className="w-full min-w-[760px] text-sm">
+          <table className="w-full min-w-120 text-sm">
             <thead className="sticky top-0 z-10 bg-[#0c0f1a]/95 backdrop-blur">
               <tr className="border-b border-white/[0.06] text-xs font-bold text-white/32">
                 <th className="px-3 py-3 text-left">Player</th>
                 <th className="px-3 py-3 text-right">{relationLabel}</th>
-                <th className="px-3 py-3 text-right">Record</th>
+                <th className="hidden px-3 py-3 text-right sm:table-cell">Record</th>
                 <th className="px-3 py-3 text-right">W%</th>
                 <th className="px-3 py-3 text-right">Avg Pts</th>
-                <th className="px-3 py-3 text-right">G/A/S</th>
-                <th className="px-3 py-3 text-right">Sh%</th>
-                <th className="px-3 py-3 text-right">Last</th>
+                <th className="hidden px-3 py-3 text-right md:table-cell">G/A/S</th>
+                <th className="hidden px-3 py-3 text-right md:table-cell">Sh%</th>
+                <th className="hidden px-3 py-3 text-right sm:table-cell">Last</th>
               </tr>
             </thead>
             <tbody>
@@ -56,18 +56,18 @@ export function PeerTable({ title, rows, relation, accent, subtitle }) {
                     </div>
                   </td>
                   <td className="stat-num px-3 py-3 text-right font-black text-white/80">{fmt(peer.matches)}</td>
-                  <td className="stat-num px-3 py-3 text-right text-white/55">
+                  <td className="stat-num hidden px-3 py-3 text-right text-white/55 sm:table-cell">
                     {fmt(peer.wins)}-{fmt(peer.losses)}{peer.draws ? `-${fmt(peer.draws)}` : ''}
                   </td>
                   <td className="px-3 py-3 text-right">
                     <WinRateBar value={peer.winRate} color={peer.winRate >= 50 ? GREEN : RED} />
                   </td>
                   <td className="stat-num px-3 py-3 text-right font-black text-white/76">{fmt(peer.avgScore, 1)}</td>
-                  <td className="stat-num px-3 py-3 text-right text-white/58">
+                  <td className="stat-num hidden px-3 py-3 text-right text-white/58 md:table-cell">
                     {fmt(peer.avgGoals, 2)} / {fmt(peer.avgAssists, 2)} / {fmt(peer.avgSaves, 2)}
                   </td>
-                  <td className="stat-num px-3 py-3 text-right text-white/48">{fmt(peer.avgShootingPct, 1)}%</td>
-                  <td className="px-3 py-3 text-right">
+                  <td className="stat-num hidden px-3 py-3 text-right text-white/48 md:table-cell">{fmt(peer.avgShootingPct, 1)}%</td>
+                  <td className="hidden px-3 py-3 text-right sm:table-cell">
                     <div className="text-xs font-bold text-white/50">{formatShortReplayDate(peer.lastPlayedAt)}</div>
                     <div className="mt-0.5 text-[11px] text-white/25">{mapLabel(peer.lastMapName)}</div>
                   </td>

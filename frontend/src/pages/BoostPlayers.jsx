@@ -579,7 +579,7 @@ export default function BoostPlayers() {
           title="Boost Player Analytics"
           description="Individual boost economy, reserve pressure, pad control, stolen pickups, supersonic spend and overfill waste."
         >
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-5">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
             <HeroMetric
               label="Players"
               value={fmt(players.length)}
@@ -644,7 +644,7 @@ export default function BoostPlayers() {
           </div>
         </PageHeader>
 
-        <main className="mx-auto max-w-7xl space-y-6 px-8 py-8">
+        <main className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-8 sm:py-8">
           <Panel
             eyebrow="Roster"
             title="Players Overview"

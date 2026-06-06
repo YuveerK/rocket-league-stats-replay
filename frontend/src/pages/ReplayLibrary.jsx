@@ -48,7 +48,7 @@ export default function ReplayLibrary() {
         onRefresh={() => loadReplays(true)}
       />
 
-      <main className="mx-auto grid max-w-7xl gap-6 px-8 py-8 xl:grid-cols-[minmax(0,1fr)_390px]">
+      <main className="mx-auto grid max-w-7xl gap-6 px-4 py-6 sm:px-8 sm:py-8 xl:grid-cols-[minmax(0,1fr)_390px]">
         <section className="min-w-0 space-y-5">
           <ReplayFilters
             query={query}

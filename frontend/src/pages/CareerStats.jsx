@@ -74,7 +74,7 @@ function SelectPanel({ players, selected, selectedPlayer, onSelect, totalMatches
           </div>
         </div>
 
-        <label className="w-56 shrink-0">
+        <label className="w-full sm:w-56 sm:shrink-0">
           <span className="mb-2 block text-xs font-bold text-white/35">Player</span>
           <span className="relative block">
             <select
@@ -118,7 +118,7 @@ function RecordRing({ summary }) {
   const degrees = winRate * 3.6
 
   return (
-    <div className="flex flex-col items-center gap-5 sm:flex-row">
+    <div className="flex flex-col items-center gap-5 md:flex-row">
       <div
         className="grid h-40 w-40 shrink-0 place-items-center rounded-full p-2"
         style={{
@@ -309,23 +309,23 @@ function MatchTable({ matches }) {
 
   return (
     <div className="max-h-[560px] overflow-auto">
-      <table className="w-full min-w-[900px] text-sm">
+      <table className="w-full min-w-135 text-sm">
         <thead className="sticky top-0 z-10 bg-[#0c0f1a]/95 backdrop-blur">
           <tr className="border-b border-white/[0.06] text-xs font-bold text-white/32">
             <th className="px-3 py-3 text-left">Match</th>
             <th className="px-3 py-3 text-left">Map</th>
-            <th className="px-3 py-3 text-left">Playlist</th>
+            <th className="hidden px-3 py-3 text-left sm:table-cell">Playlist</th>
             <th className="px-3 py-3 text-center">Score</th>
             <th className="px-3 py-3 text-center">Result</th>
             <th className="px-3 py-3 text-right">Pts</th>
             <th className="px-3 py-3 text-right">G</th>
             <th className="px-3 py-3 text-right">A</th>
             <th className="px-3 py-3 text-right">Sv</th>
-            <th className="px-3 py-3 text-right">Sh%</th>
-            <th className="px-3 py-3 text-right">BPM</th>
-            <th className="px-3 py-3 text-right">Used</th>
-            <th className="px-3 py-3 text-right">Pads</th>
-            <th className="px-3 py-3 text-right">Demos</th>
+            <th className="hidden px-3 py-3 text-right sm:table-cell">Sh%</th>
+            <th className="hidden px-3 py-3 text-right md:table-cell">BPM</th>
+            <th className="hidden px-3 py-3 text-right md:table-cell">Used</th>
+            <th className="hidden px-3 py-3 text-right md:table-cell">Pads</th>
+            <th className="hidden px-3 py-3 text-right md:table-cell">Demos</th>
           </tr>
         </thead>
         <tbody>
@@ -345,18 +345,18 @@ function MatchTable({ matches }) {
                 </div>
               </td>
               <td className="px-3 py-3 text-xs font-bold text-white/65">{mapLabel(match.mapName)}</td>
-              <td className="px-3 py-3 text-xs text-white/38">{playlistLabel(match.playlist)}</td>
+              <td className="hidden px-3 py-3 text-xs text-white/38 sm:table-cell">{playlistLabel(match.playlist)}</td>
               <td className="px-3 py-3 text-center"><ScoreCell match={match} /></td>
               <td className="px-3 py-3 text-center"><ResultBadge result={match.result} /></td>
               <td className="stat-num px-3 py-3 text-right font-black text-white/82">{fmt(match.score)}</td>
               <td className="stat-num px-3 py-3 text-right text-white/70">{fmt(match.goals)}</td>
               <td className="stat-num px-3 py-3 text-right text-white/70">{fmt(match.assists)}</td>
               <td className="stat-num px-3 py-3 text-right text-white/70">{fmt(match.saves)}</td>
-              <td className="stat-num px-3 py-3 text-right text-white/48">{fmt(match.shootingPercentage, 0)}%</td>
-              <td className="stat-num px-3 py-3 text-right text-white/48">{fmt(match.bpm, 0)}</td>
-              <td className="stat-num px-3 py-3 text-right text-white/45">{fmt(match.boostUsed, 0)}</td>
-              <td className="stat-num px-3 py-3 text-right text-sky-300/80">{fmt((match.bigPads ?? 0) + (match.smallPads ?? 0))}</td>
-              <td className="stat-num px-3 py-3 text-right text-rose-300/80">{match.netDemos > 0 ? `+${fmt(match.netDemos)}` : fmt(match.netDemos)}</td>
+              <td className="stat-num hidden px-3 py-3 text-right text-white/48 sm:table-cell">{fmt(match.shootingPercentage, 0)}%</td>
+              <td className="stat-num hidden px-3 py-3 text-right text-white/48 md:table-cell">{fmt(match.bpm, 0)}</td>
+              <td className="stat-num hidden px-3 py-3 text-right text-white/45 md:table-cell">{fmt(match.boostUsed, 0)}</td>
+              <td className="stat-num hidden px-3 py-3 text-right text-sky-300/80 md:table-cell">{fmt((match.bigPads ?? 0) + (match.smallPads ?? 0))}</td>
+              <td className="stat-num hidden px-3 py-3 text-right text-rose-300/80 md:table-cell">{match.netDemos > 0 ? `+${fmt(match.netDemos)}` : fmt(match.netDemos)}</td>
             </tr>
           ))}
         </tbody>
@@ -513,7 +513,7 @@ export default function CareerStats() {
         />
 
         {summary && (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
             <HeroMetric label="Matches" value={fmt(summary.totalMatches)} detail="career sample size" color={BLUE} Icon={Activity} />
             <HeroMetric label="Win Rate" value={fmtPct(summary.winRate)} detail={`${fmt(summary.wins)} wins, ${fmt(summary.losses)} losses`} color={GREEN} Icon={Trophy} />
             <HeroMetric label="Goal Involvement" value={fmt(totalContrib)} detail={`${fmt(goalContrib, 2)} per match`} color={ORANGE} Icon={Target} />
@@ -536,7 +536,7 @@ export default function CareerStats() {
       )}
 
       {summary && !isLoading && !error && (
-        <main className="mx-auto max-w-7xl space-y-6 px-8 py-8">
+        <main className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-8 sm:py-8">
           <CareerFilters
             filterOptions={activeStats?.filterOptions}
             playlist={playlistFilter}
@@ -545,14 +545,14 @@ export default function CareerStats() {
             onMap={setMapFilter}
           />
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <HeroMetric label="Boost used / match" value={fmt(summary.avgBoostUsed, 1)} detail={`${fmt(summary.totalBoostUsed)} total units`} color={ORANGE} Icon={BatteryCharging} />
             <HeroMetric label="Pad pickups / match" value={fmt(summary.avgPickups, 1)} detail={`${fmt(summary.totalBigPads)} big · ${fmt(summary.totalSmallPads)} small`} color={BLUE} Icon={Layers} />
             <HeroMetric label="Demo differential" value={summary.netDemos > 0 ? `+${fmt(summary.netDemos)}` : fmt(summary.netDemos)} detail={`${fmt(summary.totalKills)} inflicted · ${fmt(summary.totalDeaths)} taken`} color={RED} Icon={ShieldAlert} />
             <HeroMetric label="Boost stolen / match" value={fmt(summary.avgBoostStolen, 1)} detail={`${fmt(summary.totalBoostStolen)} stolen pad events`} color={GOLD} Icon={Zap} />
           </div>
 
-          <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.3fr)_minmax(340px,0.7fr)]">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(340px,0.7fr)]">
             <Panel
               eyebrow="Form curve"
               title="Score, goals and cumulative win rate"
@@ -637,7 +637,7 @@ export default function CareerStats() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
             <Panel
               eyebrow="Map intel"
               title="Map Performance"
@@ -693,7 +693,7 @@ export default function CareerStats() {
               </div>
 
               <div className="mt-5 overflow-auto border-t border-white/[0.06] pt-4">
-                <table className="w-full min-w-[520px] text-sm">
+                <table className="w-full min-w-full text-sm">
                   <thead>
                     <tr className="text-xs font-bold text-white/30">
                       <th className="pb-3 text-left">Map</th>

@@ -21,8 +21,8 @@ export default function Positioning() {
           model={model}
         />
 
-        <main className="mx-auto max-w-7xl space-y-6 px-8 py-8">
-          <section className="grid grid-cols-1 gap-5 xl:grid-cols-[1.2fr_0.8fr]">
+        <main className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-8 sm:py-8">
+          <section className="grid grid-cols-1 gap-5 lg:grid-cols-[1.2fr_0.8fr]">
             <TeamFieldControlPanel rows={model.zoneRows} />
             <TeamBallProximityPanel rows={model.spacingRows} />
           </section>

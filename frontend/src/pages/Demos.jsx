@@ -378,7 +378,7 @@ export default function Demos() {
           title="Demolition Analytics"
           description="Team demo pressure, player demolition leaders and who absorbed the most bumps into respawn."
         >
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-5">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
             <HeroMetric
               label="Total Demos"
               value={fmt(totalDemos)}
@@ -433,7 +433,7 @@ export default function Demos() {
           </div>
         </PageHeader>
 
-        <main className="mx-auto max-w-7xl space-y-6 px-8 py-8">
+        <main className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-8 sm:py-8">
           <section className="grid grid-cols-1 gap-5 xl:grid-cols-[1.05fr_0.95fr]">
             <Panel
               eyebrow="Teams"

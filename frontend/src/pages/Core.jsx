@@ -36,7 +36,7 @@ export default function Core() {
             title="Core Stats Command Center"
             description="High-signal team and player graphs for scoring pressure, conversion, defensive context and demos."
             >
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <HeroMetric
                 label="Final Score"
                 value={`${blueGoals} - ${orangeGoals}`}
@@ -75,7 +75,7 @@ export default function Core() {
             </div>
           </PageHeader>
 
-          <main className="mx-auto max-w-7xl px-8 py-8">
+          <main className="mx-auto max-w-7xl px-4 py-6 sm:px-8 sm:py-8">
             <CoreAnalytics players={data.players} teams={data.teams} />
           </main>
         </div>

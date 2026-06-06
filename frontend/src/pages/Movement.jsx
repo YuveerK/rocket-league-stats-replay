@@ -211,7 +211,7 @@ export default function Movement() {
             <div className="absolute top-0 right-0 w-72 h-72 rounded-full opacity-15"
               style={{ background: 'radial-gradient(circle,rgba(249,115,22,0.5) 0%,transparent 70%)', transform: 'translate(35%,-35%)' }} />
           </div>
-          <div className="relative px-8 py-7 flex items-start justify-between gap-4 max-w-7xl mx-auto">
+          <div className="relative px-4 py-5 flex items-start justify-between gap-4 max-w-7xl mx-auto sm:px-8 sm:py-7">
             <div>
               <p className="section-label">Movement</p>
               <h1 className="mt-1 text-2xl font-black tracking-tight text-white">Mechanics &amp; Movement</h1>
@@ -222,8 +222,8 @@ export default function Movement() {
           </div>
         </div>
 
-        <div className="px-8 py-7 space-y-6 max-w-7xl mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
+        <div className="px-4 py-5 space-y-6 max-w-7xl mx-auto sm:px-8 sm:py-7">
+          <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3">
             <HeroMetric label="Air Rolls"        value={totalAirRolls}  detail="jump + flip + air roll activations"  color={BLUE}   Icon={Wind}      />
             <HeroMetric label="Dodges"           value={totalDodges}    detail="total dodges executed"               color={PURPLE} Icon={RotateCcw} />
             <HeroMetric label="Dodge Refreshes"  value={totalRefreshes} detail="wall / ceiling touches"              color={GREEN}  Icon={RefreshCw} />

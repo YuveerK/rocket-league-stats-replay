@@ -234,7 +234,7 @@ function DriverRows({ players }) {
                 />
               </div>
             </div>
-            <div className="grid grid-cols-4 gap-4 text-right">
+            <div className="grid grid-cols-2 gap-3 text-right sm:grid-cols-4 sm:gap-4">
               <div>
                 <div className="section-label">BPM</div>
                 <div className="stat-num text-sm font-black text-white/75">
@@ -405,7 +405,7 @@ export default function BoostTeam() {
           title="Team Boost Analytics"
           description="Boost economy, reserve pressure, pad control, stolen boost and overfill waste by team."
         >
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-5">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
             <HeroMetric
               label="Collected (units)"
               value={fmt(totalCollected)}
@@ -468,8 +468,8 @@ export default function BoostTeam() {
           </div>
         </PageHeader>
 
-        <main className="mx-auto max-w-7xl space-y-6 px-8 py-8">
-          <section className="grid grid-cols-1 gap-5 xl:grid-cols-[1.35fr_0.65fr]">
+        <main className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-8 sm:py-8">
+          <section className="grid grid-cols-1 gap-5 lg:grid-cols-[1.35fr_0.65fr]">
             <Panel
               eyebrow="Teams Overview"
               title="Boost Economy"
