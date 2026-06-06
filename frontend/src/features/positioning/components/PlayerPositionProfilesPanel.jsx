@@ -12,7 +12,7 @@ export function PlayerPositionProfilesPanel({ players }) {
       Icon={Crosshair}
       accent={PURPLE}
     >
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {players.map((player) => (
           <PlayerPositionCard key={player.playerName} player={player} />
         ))}
