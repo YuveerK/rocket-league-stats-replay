@@ -11,14 +11,14 @@ export function ReplayLibraryHeader({ library, refreshing, onRefresh }) {
       style={{ background: HEADER_GRADIENT }}
     >
       <div className="header-divider absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
-      <div className="relative mx-auto max-w-7xl px-8 py-8">
+      <div className="relative mx-auto max-w-7xl px-4 py-6 sm:px-8 sm:py-8">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <div className="eyebrow-pill mb-4">
               <FolderOpen size={13} className="text-blue-400" />
               Replay library
             </div>
-            <h1 className="text-3xl font-black tracking-tight text-[var(--app-text)]">Choose Your Replay</h1>
+            <h1 className="text-2xl font-black tracking-tight text-[var(--app-text)] sm:text-3xl">Choose Your Replay</h1>
             <p className="mt-2 max-w-2xl text-sm text-[var(--app-text-secondary)]">
               Search by player, map, scoreline or match state, then analyze the exact replay you want.
             </p>

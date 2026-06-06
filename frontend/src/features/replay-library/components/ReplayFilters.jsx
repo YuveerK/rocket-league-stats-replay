@@ -12,17 +12,19 @@ export function ReplayFilters({
 }) {
   return (
     <div className="glass-panel p-4">
-      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_180px_180px_auto]">
-        <label className="relative block">
-          <Search size={16} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--app-text-faint)]" />
-          <input
-            value={query}
-            onChange={(e) => onQueryChange(e.target.value)}
-            placeholder="Search player, map, replay ID or score..."
-            className="glass-input glass-input--with-icon"
-          />
-        </label>
+      {/* Row 1: search (full width) */}
+      <label className="relative block">
+        <Search size={16} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--app-text-faint)]" />
+        <input
+          value={query}
+          onChange={(e) => onQueryChange(e.target.value)}
+          placeholder="Search player, map, replay ID or score..."
+          className="glass-input glass-input--with-icon"
+        />
+      </label>
 
+      {/* Row 2: filter + sort + clear */}
+      <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-[1fr_1fr_auto]">
         <label className="relative block">
           <Filter size={15} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--app-text-faint)]" />
           <select
@@ -54,13 +56,14 @@ export function ReplayFilters({
           </select>
         </label>
 
-        <button type="button" onClick={onClear} className="glass-btn-ghost">
+        <button type="button" onClick={onClear} className="glass-btn-ghost col-span-2 sm:col-span-1">
           <X size={14} />
           Clear
         </button>
       </div>
 
-      <div className="mt-3 grid gap-3 md:grid-cols-[180px_180px_minmax(0,1fr)]">
+      {/* Row 3: date range + count */}
+      <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-[1fr_1fr_minmax(0,1fr)]">
         <label className="relative block">
           <Calendar size={15} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--app-text-faint)]" />
           <input
@@ -85,7 +88,7 @@ export function ReplayFilters({
           />
         </label>
 
-        <div className="meta-strip">
+        <div className="meta-strip col-span-2 sm:col-span-1">
           Showing <span className="mx-1 font-black text-[var(--app-text)]">{filteredCount}</span> of {totalCount} replays
         </div>
       </div>

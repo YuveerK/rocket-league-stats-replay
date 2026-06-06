@@ -36,7 +36,7 @@ export function ReplayCard({ replay, selected, onSelect, onAnalyze }) {
         </div>
 
         <div className="shrink-0 text-right">
-          <div className="flex items-center gap-2 text-3xl font-black stat-num leading-none">
+          <div className="stat-num flex items-center gap-2 text-2xl font-black leading-none sm:text-3xl">
             <span className="text-blue-400">{replay.team0Score ?? '-'}</span>
             <span className="text-[var(--app-text-faint)]">-</span>
             <span className="text-orange-400">{replay.team1Score ?? '-'}</span>
@@ -47,7 +47,7 @@ export function ReplayCard({ replay, selected, onSelect, onAnalyze }) {
         </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-2">
+      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="team-zone team-zone--blue">
           <div className="mb-2 flex items-center justify-between">
             <span className="text-[10px] font-black uppercase tracking-[0.16em] text-blue-400/90">Blue</span>

@@ -48,8 +48,15 @@ export default function ReplayLibrary() {
         onRefresh={() => loadReplays(true)}
       />
 
-      <main className="mx-auto grid max-w-7xl gap-6 px-4 py-6 sm:px-8 sm:py-8 xl:grid-cols-[minmax(0,1fr)_390px]">
+      <main className="mx-auto grid max-w-7xl gap-6 px-4 py-6 sm:px-8 sm:py-8 lg:grid-cols-[minmax(0,1fr)_390px]">
         <section className="min-w-0 space-y-5">
+          {/* Mobile: compact selected-replay banner above the filter row */}
+          {selectedReplay && (
+            <div className="lg:hidden">
+              <SelectedReplay replay={selectedReplay} onAnalyze={handleAnalyze} mobile />
+            </div>
+          )}
+
           <ReplayFilters
             query={query}
             onQueryChange={setQuery}
@@ -78,7 +85,8 @@ export default function ReplayLibrary() {
           />
         </section>
 
-        <aside>
+        {/* Desktop sidebar — hidden below lg */}
+        <aside className="hidden lg:block">
           <SelectedReplay replay={selectedReplay} onAnalyze={handleAnalyze} />
         </aside>
       </main>

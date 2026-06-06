@@ -4,8 +4,9 @@ import { fmtDuration } from '@/lib/formatters'
 import { formatDate, formatTime, replayTitle, resultForPrimaryPlayer, teamPlayers } from '@/lib/replayUtils'
 import { PlayerPill } from './PlayerPill'
 
-export function SelectedReplay({ replay, onAnalyze }) {
+export function SelectedReplay({ replay, onAnalyze, mobile = false }) {
   if (!replay) {
+    if (mobile) return null
     return (
       <div className="glass-panel p-8 text-center text-[var(--app-text-secondary)]">
         Select a replay to inspect its match card.
@@ -17,6 +18,46 @@ export function SelectedReplay({ replay, onAnalyze }) {
   const orangePlayers = teamPlayers(replay, 1)
   const result = resultForPrimaryPlayer(replay)
 
+  // Compact banner shown above the list on mobile
+  if (mobile) {
+    return (
+      <div className="glass-card overflow-hidden p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="section-label mb-1">Selected</p>
+            <h3 className="truncate text-base font-black text-[var(--app-text)]">
+              {replayTitle(replay)}
+            </h3>
+            <p className="mt-1 text-xs text-[var(--app-text-secondary)]">
+              {formatDate(replay)} · {replay.mapDisplayName ?? replay.mapName ?? 'Unknown map'}
+            </p>
+          </div>
+          <div className="shrink-0 text-right">
+            <div className="stat-num flex items-center gap-2 text-2xl font-black leading-none">
+              <span className="text-blue-400">{replay.team0Score ?? '-'}</span>
+              <span className="text-[var(--app-text-faint)]">-</span>
+              <span className="text-orange-400">{replay.team1Score ?? '-'}</span>
+            </div>
+            {result && (
+              <p className="mt-1 text-xs font-bold uppercase tracking-wide" style={{ color: result === 'WIN' ? '#34d399' : '#f43f5e' }}>
+                {result}
+              </p>
+            )}
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => onAnalyze(replay)}
+          className="btn-primary btn-primary-lg mt-4 w-full justify-center"
+        >
+          <Play size={16} />
+          {replay.analyzed ? 'Open this replay' : 'Analyze this replay'}
+        </button>
+      </div>
+    )
+  }
+
+  // Full side panel (desktop)
   return (
     <div className="feature-panel sticky top-6 overflow-hidden p-5">
       <div className="flex items-start justify-between gap-3">
@@ -40,7 +81,7 @@ export function SelectedReplay({ replay, onAnalyze }) {
         <div className="text-right">
           <p className="text-xs font-black uppercase tracking-[0.16em] text-blue-400/80">Blue</p>
           <p
-            className="text-7xl font-black leading-none text-blue-400 stat-num"
+            className="stat-num text-7xl font-black leading-none text-blue-400"
             style={{ textShadow: '0 0 40px rgba(96,165,250,0.35)' }}
           >
             {replay.team0Score ?? '-'}
@@ -50,7 +91,7 @@ export function SelectedReplay({ replay, onAnalyze }) {
         <div>
           <p className="text-xs font-black uppercase tracking-[0.16em] text-orange-400/80">Orange</p>
           <p
-            className="text-7xl font-black leading-none text-orange-400 stat-num"
+            className="stat-num text-7xl font-black leading-none text-orange-400"
             style={{ textShadow: '0 0 40px rgba(251,146,60,0.35)' }}
           >
             {replay.team1Score ?? '-'}
@@ -61,7 +102,7 @@ export function SelectedReplay({ replay, onAnalyze }) {
       <div className="grid grid-cols-2 gap-2">
         <div className="rounded-2xl border border-[var(--app-glass-border)] bg-[var(--app-surface-muted)] p-3">
           <p className="section-label">Duration</p>
-          <p className="mt-2 text-xl font-black text-[var(--app-text)] stat-num">{fmtDuration(replay.totalSecondsPlayed)}</p>
+          <p className="stat-num mt-2 text-xl font-black text-[var(--app-text)]">{fmtDuration(replay.totalSecondsPlayed)}</p>
         </div>
         <div className="rounded-2xl border border-[var(--app-glass-border)] bg-[var(--app-surface-muted)] p-3">
           <p className="section-label">Result</p>
