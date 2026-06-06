@@ -331,86 +331,175 @@ export default function Movement() {
           )}
 
           <Panel eyebrow="Speed stats" title="Speed &amp; Input Reference">
-            <div className="overflow-x-auto">
+            {/* Mobile: cards */}
+            <div className="space-y-2.5 md:hidden">
+              {[...blue, ...orange].map((p) => (
+                <div key={p.playerName} className="rounded-xl border border-white/6 bg-white/3 p-3">
+                  <div className="flex items-center gap-2">
+                    <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: teamColor(p.team) }} />
+                    <span className="font-bold text-sm text-white/85">{p.playerName}</span>
+                    {p.isBot && <span className="rounded border border-white/8 bg-white/5 px-1.5 py-0.5 text-[9px] font-black uppercase text-white/20">BOT</span>}
+                  </div>
+                  <div className="mt-2.5 grid grid-cols-3 gap-x-4 gap-y-2 border-t border-white/6 pt-2.5 text-center">
+                    <div>
+                      <div className="stat-num text-sm font-black text-white/75">{p.maxSpeedUU != null ? Math.round(n(p.maxSpeedUU)).toLocaleString() : '—'}</div>
+                      <div className="text-[10px] text-white/28">Max Speed</div>
+                    </div>
+                    <div>
+                      <div className="stat-num text-sm text-white/45">{p.avgSpeedUU != null ? Math.round(n(p.avgSpeedUU)).toLocaleString() : '—'}</div>
+                      <div className="text-[10px] text-white/28">Avg Speed</div>
+                    </div>
+                    <div>
+                      <div className="stat-num text-sm font-bold text-white/75">{p.supersonicPct != null ? `${fmt(p.supersonicPct, 1)}%` : '—'}</div>
+                      <div className="text-[10px] text-white/28">Supersonic</div>
+                    </div>
+                    <div>
+                      <div className="stat-num text-sm text-white/50">{p.airbornePct != null ? `${fmt(p.airbornePct, 1)}%` : '—'}</div>
+                      <div className="text-[10px] text-white/28">Airborne</div>
+                    </div>
+                    <div>
+                      <div className="stat-num text-sm text-white/45">{p.handbrakeUsagePct != null ? `${fmt(p.handbrakeUsagePct, 1)}%` : '—'}</div>
+                      <div className="text-[10px] text-white/28">Handbrake</div>
+                    </div>
+                    <div>
+                      <div className="stat-num text-sm text-white/40">{p.avgSteerDeviation != null ? `${fmt(p.avgSteerDeviation, 1)}%` : '—'}</div>
+                      <div className="text-[10px] text-white/28">Steer Dev</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {/* Desktop: table */}
+            <div className="hidden overflow-x-auto md:block">
               <table className="w-full">
                 <thead>
-                  <tr className="text-[10px] font-black uppercase tracking-widest text-white/20 border-b border-white/5">
-                    {['Player','Max Speed','Avg Speed','Supersonic %','Airborne %','Handbrake %','Steer Dev'].map((h, i) => (
-                      <th key={h} className={`pb-2.5 font-black ${i === 0 ? 'text-left pr-4' : 'text-right px-3'}`}>{h}</th>
+                  <tr className="border-b border-white/5 text-[10px] font-black uppercase tracking-widest text-white/20">
+                    {['Player', 'Max Speed', 'Avg Speed', 'Supersonic %', 'Airborne %', 'Handbrake %', 'Steer Dev'].map((h, i) => (
+                      <th key={h} className={`pb-2.5 font-black ${i === 0 ? 'pr-4 text-left' : 'px-3 text-right'}`}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {[...blue,...orange].map(p => (
-                    <tr key={p.playerName} className="border-t border-white/4 hover:bg-white/2 transition-colors">
+                  {[...blue, ...orange].map((p) => (
+                    <tr key={p.playerName} className="border-t border-white/4 transition-colors hover:bg-white/2">
                       <td className="py-3 pr-4">
                         <div className="flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full shrink-0" style={{ background: teamColor(p.team) }} />
-                          <span className="font-bold text-sm text-white/85">{p.playerName}</span>
-                          {p.isBot && <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-white/5 text-white/20 border border-white/8">BOT</span>}
+                          <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: teamColor(p.team) }} />
+                          <span className="text-sm font-bold text-white/85">{p.playerName}</span>
+                          {p.isBot && <span className="rounded border border-white/8 bg-white/5 px-1.5 py-0.5 text-[9px] font-black uppercase text-white/20">BOT</span>}
                         </div>
                       </td>
-                      <td className="py-3 px-3 text-right tabular-nums font-black text-sm text-white/75">{p.maxSpeedUU != null ? Math.round(n(p.maxSpeedUU)).toLocaleString() : '—'}</td>
-                      <td className="py-3 px-3 text-right tabular-nums text-sm text-white/45">{p.avgSpeedUU != null ? Math.round(n(p.avgSpeedUU)).toLocaleString() : '—'}</td>
-                      <td className="py-3 px-3 text-right tabular-nums font-bold text-sm text-white/75">{p.supersonicPct != null ? `${fmt(p.supersonicPct,1)}%` : '—'}</td>
-                      <td className="py-3 px-3 text-right tabular-nums text-sm text-white/50">{p.airbornePct != null ? `${fmt(p.airbornePct,1)}%` : '—'}</td>
-                      <td className="py-3 px-3 text-right tabular-nums text-sm text-white/45">{p.handbrakeUsagePct != null ? `${fmt(p.handbrakeUsagePct,1)}%` : '—'}</td>
-                      <td className="py-3 pl-3 text-right tabular-nums text-sm text-white/40">{p.avgSteerDeviation != null ? `${fmt(p.avgSteerDeviation,1)}%` : '—'}</td>
+                      <td className="px-3 py-3 text-right text-sm font-black tabular-nums text-white/75">{p.maxSpeedUU != null ? Math.round(n(p.maxSpeedUU)).toLocaleString() : '—'}</td>
+                      <td className="px-3 py-3 text-right text-sm tabular-nums text-white/45">{p.avgSpeedUU != null ? Math.round(n(p.avgSpeedUU)).toLocaleString() : '—'}</td>
+                      <td className="px-3 py-3 text-right text-sm font-bold tabular-nums text-white/75">{p.supersonicPct != null ? `${fmt(p.supersonicPct, 1)}%` : '—'}</td>
+                      <td className="px-3 py-3 text-right text-sm tabular-nums text-white/50">{p.airbornePct != null ? `${fmt(p.airbornePct, 1)}%` : '—'}</td>
+                      <td className="px-3 py-3 text-right text-sm tabular-nums text-white/45">{p.handbrakeUsagePct != null ? `${fmt(p.handbrakeUsagePct, 1)}%` : '—'}</td>
+                      <td className="py-3 pl-3 text-right text-sm tabular-nums text-white/40">{p.avgSteerDeviation != null ? `${fmt(p.avgSteerDeviation, 1)}%` : '—'}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-              <p className="mt-3 text-[11px] text-white/20 leading-relaxed">
+              <p className="mt-3 text-[11px] leading-relaxed text-white/20">
                 Speed in Unreal Units/s (max car speed ≈ 2,300 UU/s). Steer deviation = average absolute deviation from center input, normalised to 0–100%.
               </p>
             </div>
           </Panel>
 
           <Panel eyebrow="Network &amp; identity" title="Connection Quality &amp; Player Info">
-            <div className="overflow-x-auto">
+            {/* Mobile: cards */}
+            <div className="space-y-2.5 md:hidden">
+              {[...blue, ...orange].map((p) => {
+                const careerHours = p.totalGameTimePlayed != null ? Math.round(n(p.totalGameTimePlayed) / 3600) : null
+                const nq = netQuality(p.worstNetQuality)
+                return (
+                  <div key={p.playerName} className="rounded-xl border border-white/6 bg-white/3 p-3">
+                    <div className="flex items-center gap-2">
+                      <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: teamColor(p.team) }} />
+                      <span className="text-sm font-bold text-white/85">{p.playerName}</span>
+                      {p.isBot && <span className="rounded border border-white/8 bg-white/5 px-1.5 py-0.5 text-[9px] font-black uppercase text-white/20">BOT</span>}
+                      <span className="ml-auto text-xs font-bold text-white/45">{p.platform ?? '—'}</span>
+                    </div>
+                    <div className="mt-2.5 grid grid-cols-3 gap-x-4 gap-y-2 border-t border-white/6 pt-2.5 text-center">
+                      <div>
+                        <div className="stat-num text-sm font-black text-white/75">
+                          {p.avgPing != null ? `${Math.round(n(p.avgPing))} ms` : <span className="text-white/20">{p.isBot ? 'bot' : '—'}</span>}
+                        </div>
+                        <div className="text-[10px] text-white/28">Avg Ping</div>
+                      </div>
+                      <div>
+                        <div className="stat-num text-sm text-white/45">
+                          {p.maxPing != null ? `${p.maxPing} ms` : <span className="text-white/20">{p.isBot ? 'bot' : '—'}</span>}
+                        </div>
+                        <div className="text-[10px] text-white/28">Max Ping</div>
+                      </div>
+                      <div>
+                        <div className={`text-sm font-black ${nq.color}`}>
+                          {p.isBot && p.worstNetQuality == null ? <span className="font-medium text-white/20">bot</span> : nq.label}
+                        </div>
+                        <div className="text-[10px] text-white/28">Connection</div>
+                      </div>
+                      <div>
+                        <div className="stat-num text-sm text-white/40">
+                          {careerHours != null ? `${careerHours.toLocaleString()} h` : <span className="text-white/20">—</span>}
+                        </div>
+                        <div className="text-[10px] text-white/28">Career Time</div>
+                      </div>
+                      <div className="col-span-2">
+                        <div className="font-mono text-[11px] text-white/25">
+                          {p.partyLeaderId ? p.partyLeaderId.split(':').pop().slice(0, 12) + '…' : <span className="font-sans text-xs not-italic text-white/15">solo</span>}
+                        </div>
+                        <div className="text-[10px] text-white/28">Party</div>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+            {/* Desktop: table */}
+            <div className="hidden overflow-x-auto md:block">
               <table className="w-full">
                 <thead>
-                  <tr className="text-[10px] font-black uppercase tracking-widest text-white/20 border-b border-white/5">
-                    {['Player','Platform','Avg Ping','Max Ping','Connection','Career Time','Party'].map((h, i) => (
-                      <th key={h} className={`pb-2.5 font-black ${i === 0 ? 'text-left pr-4' : 'text-right px-3'}`}>{h}</th>
+                  <tr className="border-b border-white/5 text-[10px] font-black uppercase tracking-widest text-white/20">
+                    {['Player', 'Platform', 'Avg Ping', 'Max Ping', 'Connection', 'Career Time', 'Party'].map((h, i) => (
+                      <th key={h} className={`pb-2.5 font-black ${i === 0 ? 'pr-4 text-left' : 'px-3 text-right'}`}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {[...blue,...orange].map(p => {
+                  {[...blue, ...orange].map((p) => {
                     const careerHours = p.totalGameTimePlayed != null ? Math.round(n(p.totalGameTimePlayed) / 3600) : null
                     const nq = netQuality(p.worstNetQuality)
                     return (
-                      <tr key={p.playerName} className="border-t border-white/4 hover:bg-white/2 transition-colors">
+                      <tr key={p.playerName} className="border-t border-white/4 transition-colors hover:bg-white/2">
                         <td className="py-3 pr-4">
                           <div className="flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full shrink-0" style={{ background: teamColor(p.team) }} />
-                            <span className="font-bold text-sm text-white/85">{p.playerName}</span>
-                            {p.isBot && <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-white/5 text-white/20 border border-white/8">BOT</span>}
+                            <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: teamColor(p.team) }} />
+                            <span className="text-sm font-bold text-white/85">{p.playerName}</span>
+                            {p.isBot && <span className="rounded border border-white/8 bg-white/5 px-1.5 py-0.5 text-[9px] font-black uppercase text-white/20">BOT</span>}
                           </div>
                         </td>
-                        <td className="py-3 px-3 text-right"><span className="text-xs font-bold text-white/45">{p.platform ?? <span className="text-white/15">—</span>}</span></td>
-                        <td className="py-3 px-3 text-right tabular-nums font-black text-sm text-white/75">
-                          {p.avgPing != null ? `${Math.round(n(p.avgPing))} ms` : <span className="text-white/15 text-xs">{p.isBot ? 'bot' : '—'}</span>}
+                        <td className="px-3 py-3 text-right"><span className="text-xs font-bold text-white/45">{p.platform ?? <span className="text-white/15">—</span>}</span></td>
+                        <td className="px-3 py-3 text-right text-sm font-black tabular-nums text-white/75">
+                          {p.avgPing != null ? `${Math.round(n(p.avgPing))} ms` : <span className="text-xs text-white/15">{p.isBot ? 'bot' : '—'}</span>}
                         </td>
-                        <td className="py-3 px-3 text-right tabular-nums text-sm text-white/45">
-                          {p.maxPing != null ? `${p.maxPing} ms` : <span className="text-white/15 text-xs">{p.isBot ? 'bot' : '—'}</span>}
+                        <td className="px-3 py-3 text-right text-sm tabular-nums text-white/45">
+                          {p.maxPing != null ? `${p.maxPing} ms` : <span className="text-xs text-white/15">{p.isBot ? 'bot' : '—'}</span>}
                         </td>
-                        <td className={`py-3 px-3 text-right text-xs font-black ${nq.color}`}>
-                          {p.isBot && p.worstNetQuality == null ? <span className="text-white/15 font-medium">bot</span> : nq.label}
+                        <td className={`px-3 py-3 text-right text-xs font-black ${nq.color}`}>
+                          {p.isBot && p.worstNetQuality == null ? <span className="font-medium text-white/15">bot</span> : nq.label}
                         </td>
-                        <td className="py-3 px-3 text-right text-sm text-white/40">
+                        <td className="px-3 py-3 text-right text-sm text-white/40">
                           {careerHours != null ? `${careerHours.toLocaleString()} h` : <span className="text-white/15">—</span>}
                         </td>
                         <td className="py-3 pl-3 text-right font-mono text-[11px] text-white/25">
-                          {p.partyLeaderId ? p.partyLeaderId.split(':').pop().slice(0, 8) + '…' : <span className="text-white/10 not-italic font-sans text-xs">solo</span>}
+                          {p.partyLeaderId ? p.partyLeaderId.split(':').pop().slice(0, 8) + '…' : <span className="not-italic font-sans text-xs text-white/10">solo</span>}
                         </td>
                       </tr>
                     )
                   })}
                 </tbody>
               </table>
-              <p className="mt-4 text-[11px] text-white/15 leading-relaxed">
+              <p className="mt-4 text-[11px] leading-relaxed text-white/15">
                 Ping and connection quality are only available for human players in online matches.
                 Bot players show "bot" as their network fields are not replicated.
                 Career time is total Rocket League playtime in seconds from the network data, converted to hours.
