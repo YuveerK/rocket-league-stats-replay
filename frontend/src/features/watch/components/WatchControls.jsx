@@ -42,16 +42,17 @@ export function WatchControls({
         </div>
       </div>
 
-      {/* Controls row */}
-      <div className="flex items-center gap-2 px-5 pb-4">
+      {/* Controls row — horizontally scrollable on small screens */}
+      <div className="overflow-x-auto">
+      <div className="flex items-center gap-2 px-5 pb-4 min-w-max">
         <button type="button" onClick={() => setPlaying(v => !v)}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-transform hover:scale-105"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-transform hover:scale-105"
           style={{ background: playing ? 'rgba(59,130,246,0.22)' : 'rgba(59,130,246,0.11)', border: '1px solid rgba(59,130,246,0.28)', color: '#93c5fd', boxShadow: playing ? '0 0 20px rgba(59,130,246,0.28)' : 'none' }}>
           {playing ? <Pause size={16} /> : <Play size={16} />}
         </button>
 
         <button type="button" onClick={reset}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-transform hover:scale-105"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-transform hover:scale-105"
           style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.3)' }}>
           <RotateCcw size={15} />
         </button>
@@ -129,6 +130,7 @@ export function WatchControls({
             </button>
           )
         })}
+      </div>
       </div>
     </section>
   )

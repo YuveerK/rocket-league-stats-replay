@@ -24,7 +24,7 @@ export function Panel({ eyebrow, title, subtitle, Icon, accent = '#60a5fa', chil
             <h3 className="mt-0.5 text-base font-black text-white/90">{title}</h3>
           </div>
         </div>
-        {subtitle && <span className="max-w-xs text-right text-xs text-white/30">{subtitle}</span>}
+        {subtitle && <span className="max-w-full text-right text-xs text-white/30 sm:max-w-xs">{subtitle}</span>}
       </div>
       <div className="p-5 min-w-0">{children}</div>
     </section>

@@ -25,7 +25,7 @@ export function TeamHeatmapColumns({ players, pads, filter }) {
         <TeamLabel color={ORANGE} label="Orange" count={orange.length} />
       </div>
 
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="space-y-6">
           {blue.map(p => <PlayerHeatmapCard key={p.key} player={p} allPads={pads} filter={filter} />)}
         </div>

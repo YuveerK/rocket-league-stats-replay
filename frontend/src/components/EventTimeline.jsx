@@ -72,14 +72,16 @@ function StatPill({ icon: Icon, label, value, tone = 'text-white/80' }) {
   )
 }
 
-function Tooltip({ tooltip }) {
+function Tooltip({ tooltip, containerWidth }) {
   if (!tooltip) return null
   const cfg = EV[tooltip.evt.type]
+  const tipWidth = 204
+  const maxLeft = Math.max(0, (containerWidth ?? 9999) - tipWidth - 8)
   return (
     <div
       className="pointer-events-none absolute z-20 anim-scale-in"
       style={{
-        left: Math.min(tooltip.cx + 14, 980),
+        left: Math.min(tooltip.cx + 14, maxLeft),
         top: Math.max(tooltip.cy - 68, 10),
         transformOrigin: 'top left',
       }}
@@ -121,6 +123,7 @@ function Tooltip({ tooltip }) {
 export default function EventTimeline({ events = [], matchDuration = 300 }) {
   const [tooltip, setTooltip] = useState(null)
   const svgRef = useRef()
+  const containerRef = useRef()
   const duration = matchDuration || 300
 
   const { goals, demos, saves, positioned } = useMemo(() => {
@@ -187,7 +190,7 @@ export default function EventTimeline({ events = [], matchDuration = 300 }) {
           <StatPill icon={Activity} label="Demos" value={demos.length} tone="text-red-300" />
         </div>
 
-        <div className="relative px-3 pb-4 pt-3">
+        <div ref={containerRef} className="relative px-3 pb-4 pt-3">
           <svg
             ref={svgRef}
             viewBox={`0 0 ${VW} ${VH}`}
@@ -339,7 +342,7 @@ export default function EventTimeline({ events = [], matchDuration = 300 }) {
             })}
           </svg>
 
-          <Tooltip tooltip={tooltip} />
+          <Tooltip tooltip={tooltip} containerWidth={containerRef.current?.clientWidth} />
         </div>
       </div>
     </section>

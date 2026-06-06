@@ -13,25 +13,23 @@ export function PageHeader({
       style={{ background: gradient }}
     >
       <div className="absolute inset-x-0 bottom-0 h-px bg-linear-to-r from-transparent via-white/15 to-transparent" />
-      <div className="mx-auto max-w-7xl space-y-7 px-8 py-8">
-        <div className="flex items-start justify-between gap-5">
-          <div>
-            {eyebrow && (
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/4 px-3 py-1 text-xs text-white/45">
-                {EyebrowIcon && (
-                  <EyebrowIcon
-                    size={13}
-                    style={{ color: eyebrowColor }}
-                  />
-                )}
-                {eyebrow}
-              </div>
-            )}
-            <h1 className="text-3xl font-black tracking-tight text-white">{title}</h1>
-            {description && (
-              <p className="mt-2 max-w-2xl text-sm text-white/35">{description}</p>
-            )}
-          </div>
+      <div className="mx-auto max-w-7xl space-y-7 px-4 py-6 sm:px-8 sm:py-8">
+        <div>
+          {eyebrow && (
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/4 px-3 py-1 text-xs text-white/45">
+              {EyebrowIcon && (
+                <EyebrowIcon
+                  size={13}
+                  style={{ color: eyebrowColor }}
+                />
+              )}
+              {eyebrow}
+            </div>
+          )}
+          <h1 className="text-2xl font-black tracking-tight text-white sm:text-3xl">{title}</h1>
+          {description && (
+            <p className="mt-2 max-w-2xl text-sm text-white/35">{description}</p>
+          )}
         </div>
         {children}
       </div>

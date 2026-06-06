@@ -242,7 +242,7 @@ export default function Scoreboard({ players = [] }) {
         </div>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-2">
         <TeamPanel players={team0} team={0} opponentGoals={orangeTotals.goals} />
         <TeamPanel players={team1} team={1} opponentGoals={blueTotals.goals} />
       </div>
