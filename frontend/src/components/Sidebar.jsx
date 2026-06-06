@@ -1,10 +1,12 @@
-import { NavLink } from 'react-router-dom'
+import { useEffect } from 'react'
+import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, TrendingUp, Circle, Bomb,
   Rocket, MapPin, Crosshair, Map as MapIcon,
   Wind, Video, Camera, FileSpreadsheet, Trophy,
-  FolderOpen, Users, GitCompareArrows,
+  FolderOpen, Users, GitCompareArrows, X,
 } from 'lucide-react'
+
 const NAV = [
   {
     section: 'STATS',
@@ -22,9 +24,9 @@ const NAV = [
   {
     section: 'BOOST',
     items: [
-      { to: '/boost/team',    label: 'Team',       icon: Rocket },
-      { to: '/boost/players', label: 'Players',    icon: Rocket },
-      { to: '/boost/pickups', label: 'Pickup maps',icon: MapPin },
+      { to: '/boost/team',    label: 'Team',        icon: Rocket },
+      { to: '/boost/players', label: 'Players',     icon: Rocket },
+      { to: '/boost/pickups', label: 'Pickup maps', icon: MapPin },
     ],
   },
   {
@@ -60,13 +62,26 @@ const NAV = [
   },
 ]
 
-export default function Sidebar() {
-  return (
-    <aside className="h-screen w-56 shrink-0 flex flex-col py-3 border-r overflow-hidden"
-      style={{ background: '#080b14', borderColor: 'rgba(255,255,255,0.06)' }}>
+export default function Sidebar({ isOpen, onClose }) {
+  const location = useLocation()
 
-      {/* Logo */}
-      <div className="px-5 py-3 mb-1">
+  // Close mobile nav whenever the route changes
+  useEffect(() => {
+    onClose?.()
+  }, [location.pathname]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  return (
+    <aside
+      className={[
+        'fixed inset-y-0 left-0 z-50 h-screen w-64 shrink-0 flex flex-col py-3 border-r overflow-hidden',
+        'transition-transform duration-300 ease-in-out',
+        'md:static md:z-auto md:w-56 md:translate-x-0',
+        isOpen ? 'translate-x-0' : '-translate-x-full',
+      ].join(' ')}
+      style={{ background: '#080b14', borderColor: 'rgba(255,255,255,0.06)' }}
+    >
+      {/* Logo + mobile close button */}
+      <div className="px-5 py-3 mb-1 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <div className="w-6 h-6 rounded-lg flex items-center justify-center"
             style={{ background: 'linear-gradient(135deg,#3b82f6,#6366f1)' }}>
@@ -74,6 +89,13 @@ export default function Sidebar() {
           </div>
           <span className="font-bold text-sm text-white/80 tracking-tight">Replay Parser</span>
         </div>
+        <button
+          onClick={onClose}
+          className="md:hidden flex h-7 w-7 items-center justify-center rounded-lg text-white/40 transition hover:bg-white/8 hover:text-white/70"
+          aria-label="Close navigation"
+        >
+          <X size={16} />
+        </button>
       </div>
 
       <div className="h-px mx-4 mb-3" style={{ background: 'rgba(255,255,255,0.06)' }} />
