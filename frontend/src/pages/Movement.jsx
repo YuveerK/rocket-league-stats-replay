@@ -122,8 +122,8 @@ function PlayerCard({ player, maxes }) {
           <div className="text-[9px] font-black uppercase tracking-widest text-white/25">Dodges</div>
         </div>
         <div className="flex flex-col items-center gap-1.5">
-          <div className="text-3xl font-black tabular-nums text-white/80">{player.airRolls ?? '—'}</div>
-          <div className="text-[9px] font-black uppercase tracking-widest text-white/25">Air Rolls</div>
+          <div className="text-3xl font-black tabular-nums text-white/80">{player.airActivations ?? '—'}</div>
+          <div className="text-[9px] font-black uppercase tracking-widest text-white/25">Air Acts</div>
         </div>
       </div>
 
@@ -149,14 +149,14 @@ export default function Movement() {
   const orange = players.filter(p => p.team === 1)
 
   const maxes = {
-    airRolls:        maxOf(players, 'airRolls'),
+    airActivations:  maxOf(players, 'airActivations'),
     dodgeCount:      maxOf(players, 'dodgeCount'),
     dodgesRefreshed: maxOf(players, 'dodgesRefreshed'),
     doubleJumps:     maxOf(players, 'doubleJumps'),
     maxSpeedUU:      maxOf(players, 'maxSpeedUU'),
   }
 
-  const totalAirRolls  = sum(players, 'airRolls')
+  const totalAirActivations = sum(players, 'airActivations')
   const totalDodges    = sum(players, 'dodgeCount')
   const totalRefreshes = sum(players, 'dodgesRefreshed')
   const totalDblJumps  = sum(players, 'doubleJumps')
@@ -169,7 +169,7 @@ export default function Movement() {
   const mechData = players.map(p => ({
     name:      p.playerName.length > 12 ? p.playerName.slice(0, 11) + '…' : p.playerName,
     full:      p.playerName,
-    airRolls:  n(p.airRolls),
+    airActivations: n(p.airActivations),
     dodges:    n(p.dodgeCount),
     refreshes: n(p.dodgesRefreshed),
     dblJumps:  n(p.doubleJumps),
@@ -184,12 +184,12 @@ export default function Movement() {
     color:          teamColor(p.team),
   }))
 
-  const radarKeys = ['Air Rolls', 'Dodges', 'Refreshes', 'Dbl Jumps', 'Supersonic', 'Airborne']
+  const radarKeys = ['Air Acts', 'Dodges', 'Refreshes', 'Dbl Jumps', 'Supersonic', 'Airborne']
   const radarData = radarKeys.map(key => {
     const row = { subject: key }
     players.forEach(p => {
       let raw
-      if (key === 'Air Rolls')  raw = n(p.airRolls)        / Math.max(1, maxes.airRolls)        * 100
+      if (key === 'Air Acts')   raw = n(p.airActivations)  / Math.max(1, maxes.airActivations)  * 100
       if (key === 'Dodges')     raw = n(p.dodgeCount)       / Math.max(1, maxes.dodgeCount)       * 100
       if (key === 'Refreshes')  raw = n(p.dodgesRefreshed)  / Math.max(1, maxes.dodgesRefreshed)  * 100
       if (key === 'Dbl Jumps')  raw = n(p.doubleJumps)      / Math.max(1, maxes.doubleJumps)      * 100
@@ -224,7 +224,7 @@ export default function Movement() {
 
         <div className="px-4 py-5 space-y-6 max-w-7xl mx-auto sm:px-8 sm:py-7">
           <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3">
-            <HeroMetric label="Air Rolls"        value={totalAirRolls}  detail="jump + flip + air roll activations"  color={BLUE}   Icon={Wind}      />
+            <HeroMetric label="Air Activations"   value={totalAirActivations} detail="all airborne jump-button presses" color={BLUE} Icon={Wind} />
             <HeroMetric label="Dodges"           value={totalDodges}    detail="total dodges executed"               color={PURPLE} Icon={RotateCcw} />
             <HeroMetric label="Dodge Refreshes"  value={totalRefreshes} detail="wall / ceiling touches"              color={GREEN}  Icon={RefreshCw} />
             <HeroMetric label="Double Jumps"     value={totalDblJumps}  detail="total across all players"            color={GOLD}   Icon={Repeat2}   />
@@ -257,14 +257,14 @@ export default function Movement() {
           </div>
 
           <div className="grid gap-5 xl:grid-cols-2">
-            <Panel eyebrow="Mechanics breakdown" title="Air Rolls &amp; Dodges">
+            <Panel eyebrow="Mechanics breakdown" title="Air Activations &amp; Dodges">
               <MeasuredChart height={220}>
                 {({ width }) => (
                   <BarChart data={mechData} width={width} height={220} barGap={3} barCategoryGap="24%">
                     <XAxis dataKey="name" tick={{ fill: 'rgba(255,255,255,0.28)', fontSize: 11 }} axisLine={false} tickLine={false} />
                     <YAxis tick={{ fill: 'rgba(255,255,255,0.18)', fontSize: 10 }} axisLine={false} tickLine={false} width={26} />
                     <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
-                    <Bar dataKey="airRolls" name="Air Rolls" radius={[3,3,0,0]}>
+                    <Bar dataKey="airActivations" name="Air Activations" radius={[3,3,0,0]}>
                       {mechData.map((e,i) => <Cell key={i} fill={e.color} fillOpacity={0.9} />)}
                     </Bar>
                     <Bar dataKey="dodges" name="Dodges" radius={[3,3,0,0]}>
@@ -274,7 +274,7 @@ export default function Movement() {
                 )}
               </MeasuredChart>
               <div className="flex items-center gap-5 mt-3 justify-center">
-                {[['Air Rolls','rgba(255,255,255,0.75)'],['Dodges','rgba(255,255,255,0.3)']].map(([l,c]) => (
+                {[['Air Activations','rgba(255,255,255,0.75)'],['Dodges','rgba(255,255,255,0.3)']].map(([l,c]) => (
                   <span key={l} className="flex items-center gap-1.5 text-[11px] text-white/30">
                     <span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: c }} />{l}
                   </span>

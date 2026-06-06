@@ -107,7 +107,7 @@ function matchPlayerData(p, playerId, replayId) {
     airbornePct: p.airbornePct ?? null,
     avgThrottle: p.avgThrottle ?? null,
     handbrakeUsagePct: p.handbrakeUsagePct ?? null,
-    airRolls: p.airRolls ?? null,
+    airActivations: p.airActivations ?? null,
     dodgeCount: p.dodgeCount ?? null,
     doubleJumps: p.doubleJumps ?? null,
     dodgesRefreshed: p.dodgesRefreshed ?? null,
