@@ -100,29 +100,58 @@ function StatRow({ stat, t0, t1 }) {
   const Icon = stat.Icon
 
   return (
-    <div className="grid grid-cols-[96px_minmax(150px,1fr)_96px] items-center gap-4 border-b border-white/[0.055] px-5 py-3.5 last:border-b-0 hover:bg-white/[0.035]">
-      <div className="min-w-0">
-        <div className={`stat-num text-lg font-black ${winner === 'blue' ? 'text-white' : 'text-white/38'}`}>
-          {display(stat, v0)}
-        </div>
-        {winner === 'blue' && <div className="text-[9px] font-black uppercase tracking-widest text-blue-300/70">Edge</div>}
-      </div>
-
-      <div className="min-w-0">
+    <div className="border-b border-white/5.5 last:border-b-0 hover:bg-white/[0.035]">
+      {/* Mobile: stacked label → values → bar */}
+      <div className="px-4 py-3 md:hidden">
         <div className="mb-2 flex items-center justify-center gap-2">
-          <span className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-white/4 text-white/40">
-            <Icon size={13} />
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/4 text-white/40">
+            <Icon size={11} />
           </span>
-          <span className="text-xs font-black uppercase tracking-widest text-white/42">{stat.label}</span>
+          <span className="text-[11px] font-black uppercase tracking-widest text-white/42">{stat.label}</span>
         </div>
-        <SplitBar v0={v0} v1={v1} max={stat.max} />
+        <div className="flex items-center gap-2">
+          <div className="flex-1 text-right">
+            <div className={`stat-num text-base font-black ${winner === 'blue' ? 'text-white' : 'text-white/38'}`}>
+              {display(stat, v0)}
+            </div>
+            {winner === 'blue' && <div className="text-[9px] font-black uppercase tracking-widest text-blue-300/70">Edge</div>}
+          </div>
+          <span className="shrink-0 rounded-full border border-white/8 bg-white/4 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-widest text-white/30">vs</span>
+          <div className="flex-1">
+            <div className={`stat-num text-base font-black ${winner === 'orange' ? 'text-white' : 'text-white/38'}`}>
+              {display(stat, v1)}
+            </div>
+            {winner === 'orange' && <div className="text-[9px] font-black uppercase tracking-widest text-orange-300/70">Edge</div>}
+          </div>
+        </div>
+        <SplitBar v0={v0} v1={v1} max={stat.max} className="mt-2" />
       </div>
 
-      <div className="min-w-0 text-right">
-        <div className={`stat-num text-lg font-black ${winner === 'orange' ? 'text-white' : 'text-white/38'}`}>
-          {display(stat, v1)}
+      {/* Desktop: original 3-col grid */}
+      <div className="hidden items-center gap-4 px-5 py-3.5 md:grid md:grid-cols-[96px_minmax(150px,1fr)_96px]">
+        <div className="min-w-0">
+          <div className={`stat-num text-lg font-black ${winner === 'blue' ? 'text-white' : 'text-white/38'}`}>
+            {display(stat, v0)}
+          </div>
+          {winner === 'blue' && <div className="text-[9px] font-black uppercase tracking-widest text-blue-300/70">Edge</div>}
         </div>
-        {winner === 'orange' && <div className="text-[9px] font-black uppercase tracking-widest text-orange-300/70">Edge</div>}
+
+        <div className="min-w-0">
+          <div className="mb-2 flex items-center justify-center gap-2">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-white/4 text-white/40">
+              <Icon size={13} />
+            </span>
+            <span className="text-xs font-black uppercase tracking-widest text-white/42">{stat.label}</span>
+          </div>
+          <SplitBar v0={v0} v1={v1} max={stat.max} />
+        </div>
+
+        <div className="min-w-0 text-right">
+          <div className={`stat-num text-lg font-black ${winner === 'orange' ? 'text-white' : 'text-white/38'}`}>
+            {display(stat, v1)}
+          </div>
+          {winner === 'orange' && <div className="text-[9px] font-black uppercase tracking-widest text-orange-300/70">Edge</div>}
+        </div>
       </div>
     </div>
   )
@@ -149,7 +178,7 @@ export default function TeamStats({ teams }) {
       >
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
 
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/[0.06] px-5 py-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/6 px-5 py-4">
           <div className="flex items-center gap-2">
             <span className="h-2.5 w-2.5 rounded-full" style={{ background: BLUE, boxShadow: `0 0 12px ${BLUE}` }} />
             <span className="text-xs font-black uppercase tracking-[0.18em] text-blue-300">Blue</span>
@@ -160,7 +189,7 @@ export default function TeamStats({ teams }) {
           <p className="text-xs font-semibold text-white/35">Side-by-side pressure, control and resource efficiency.</p>
         </div>
 
-        <div className="grid grid-cols-1 gap-3 border-b border-white/[0.06] p-4 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 border-b border-white/6 p-4 lg:grid-cols-4">
           <InsightCard label="Shot Pressure" blue={t0.shots} orange={t1.shots} Icon={Crosshair} />
           <InsightCard label="Conversion" blue={t0.shootingPct} orange={t1.shootingPct} Icon={Target} formatter={value => `${fmt(value, 1)}%`} />
           <InsightCard label="Possession" blue={t0.possession ?? 0} orange={t1.possession ?? 0} Icon={Activity} formatter={value => `${fmt(value, 1)}%`} />
@@ -170,21 +199,34 @@ export default function TeamStats({ teams }) {
           <InsightCard label="Small Pads" blue={t0.smallPads} orange={t1.smallPads} Icon={Gauge} />
         </div>
 
-        <p className="border-b border-white/[0.06] px-5 pb-4 text-xs text-white/35">
+        <p className="border-b border-white/6 px-5 pb-4 text-xs text-white/35">
           Pad counts (big / small) are estimated from replay pickup events. Boost collected is visible boost meter gain in units, not pad count.
         </p>
 
-        <div className="grid grid-cols-[96px_minmax(150px,1fr)_96px] gap-4 border-b border-white/[0.06] px-5 py-3">
-          <div>
+        <div className="border-b border-white/6 px-5 py-3">
+          {/* Mobile */}
+          <div className="flex items-center justify-between md:hidden">
             <div className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full" style={{ background: BLUE, boxShadow: `0 0 10px ${BLUE}` }} />
-            <span className="section-label text-blue-300">Blue</span>
+              <span className="h-2 w-2 rounded-full" style={{ background: BLUE, boxShadow: `0 0 10px ${BLUE}` }} />
+              <span className="section-label text-blue-300">Blue</span>
+            </div>
+            <span className="section-label">Stat Duel</span>
+            <div className="flex items-center gap-2">
+              <span className="section-label text-orange-300">Orange</span>
+              <span className="h-2 w-2 rounded-full" style={{ background: ORANGE, boxShadow: `0 0 10px ${ORANGE}` }} />
             </div>
           </div>
-          <div className="text-center section-label">Stat Duel</div>
-          <div className="flex items-center justify-end gap-2">
-            <span className="section-label text-orange-300">Orange</span>
-            <span className="h-2 w-2 rounded-full" style={{ background: ORANGE, boxShadow: `0 0 10px ${ORANGE}` }} />
+          {/* Desktop */}
+          <div className="hidden grid-cols-[96px_minmax(150px,1fr)_96px] gap-4 md:grid">
+            <div className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full" style={{ background: BLUE, boxShadow: `0 0 10px ${BLUE}` }} />
+              <span className="section-label text-blue-300">Blue</span>
+            </div>
+            <div className="text-center section-label">Stat Duel</div>
+            <div className="flex items-center justify-end gap-2">
+              <span className="section-label text-orange-300">Orange</span>
+              <span className="h-2 w-2 rounded-full" style={{ background: ORANGE, boxShadow: `0 0 10px ${ORANGE}` }} />
+            </div>
           </div>
         </div>
 
