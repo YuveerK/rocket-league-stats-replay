@@ -13,10 +13,7 @@ import EventTimeline from "@/components/EventTimeline";
 import TeamStats from "@/components/TeamStats";
 import BoostEconomyPanel from "@/components/BoostEconomyPanel";
 import GoalBreakdown from "@/components/GoalBreakdown";
-import UploadReplay from "@/components/UploadReplay";
-import AnalysisProgress from "@/components/AnalysisProgress";
 import { usePageData } from "@/hooks/usePageData";
-import { useAnalysisJob } from "@/hooks/useAnalysisJob";
 import { formatDuration } from "@/lib/formatters";
 
 const PLAYLIST_LABELS = {
@@ -65,7 +62,7 @@ function MetaBadge({ icon: Icon, children }) {
   );
 }
 
-function MatchHero({ match, onAnalysisStart }) {
+function MatchHero({ match }) {
   return (
     <div
       className="relative overflow-hidden border-b border-white/6"
@@ -127,7 +124,6 @@ function MatchHero({ match, onAnalysisStart }) {
               <MetaBadge icon={User}>{match.recorderName}</MetaBadge>
             </div>
           </div>
-          <UploadReplay onAnalysisStart={onAnalysisStart} compact />
         </div>
 
         <ScoreDisplay match={match} />
@@ -208,35 +204,26 @@ function ScoreDisplay({ match }) {
 }
 
 export default function Overview() {
-  const { data, loading, error, refetch } = usePageData("/api/overview");
-  const { analysisJob, handleAnalysisStart, handleAnalysisComplete } =
-    useAnalysisJob(refetch);
+  const { data, loading, error } = usePageData("/api/overview");
 
   return (
     <>
-      {analysisJob && (
-        <AnalysisProgress
-          replayPath={analysisJob.replayPath}
-          replayName={analysisJob.replayName}
-          onComplete={handleAnalysisComplete}
-        />
-      )}
-
       {loading && (
         <div className="flex items-center justify-center min-h-screen text-white/30 text-sm">
           Loading…
         </div>
       )}
 
-      {!loading && (error || !data) && !analysisJob && (
-        <div className="p-8 max-w-2xl mx-auto">
-          <UploadReplay onAnalysisStart={handleAnalysisStart} />
+      {!loading && (error || !data) && (
+        <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
+          <p className="text-white/25 text-sm">No replay data available.</p>
+          {error && <p className="text-sm text-red-400">{error}</p>}
         </div>
       )}
 
       {!loading && data && (
         <div className="anim-fade-in">
-          <MatchHero match={data.match} onAnalysisStart={handleAnalysisStart} />
+          <MatchHero match={data.match} />
           <div className="px-8 py-8 space-y-6 max-w-7xl mx-auto">
             <Scoreboard players={data.players} />
             <BoostEconomyPanel teams={data.teams} players={data.players} />

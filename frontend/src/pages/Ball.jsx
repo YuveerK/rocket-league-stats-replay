@@ -9,20 +9,19 @@ import { BallBandPanels } from "@/features/ball/components/BallBandPanels";
 import { MomentumTimelinePanel } from "@/features/ball/components/MomentumTimelinePanel";
 
 export default function Ball() {
-  const { data, error, status, analysis, mode, setMode, model } =
+  const { data, error, status, mode, setMode, model } =
     useBallAnalytics();
 
   if (status !== "ready") {
-    return <ReplayPage status={status} analysis={analysis} error={error} />;
+    return <ReplayPage status={status} error={error} />;
   }
 
   return (
-    <ReplayPage status={status} analysis={analysis} error={error}>
+    <ReplayPage status={status} error={error}>
       <div className="anim-fade-in">
         <BallHeader
           data={data}
           model={model}
-          onUpload={analysis.handleAnalysisStart}
         />
 
         <main className="mx-auto max-w-7xl space-y-6 px-8 py-8">

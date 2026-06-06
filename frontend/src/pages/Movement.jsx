@@ -6,10 +6,8 @@ import { MeasuredChart } from '@/components/ui/MeasuredChart'
 import { HeroMetric } from '@/components/ui/HeroMetric'
 import { Panel } from '@/components/ui/Panel'
 import { ChartTooltip } from '@/components/ui/ChartTooltip'
-import UploadReplay from '@/components/UploadReplay'
 import ReplayPage from '@/components/layout/ReplayPage'
 import { usePageData } from '@/hooks/usePageData'
-import { useAnalysisJob } from '@/hooks/useAnalysisJob'
 import { n, fmt } from '@/lib/formatters'
 import { BLUE, ORANGE, GREEN, PURPLE, GOLD } from '@/lib/colors'
 import {
@@ -142,8 +140,7 @@ function PlayerCard({ player, maxes }) {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function Movement() {
-  const { data, loading, error, refetch } = usePageData('/api/movement')
-  const analysis = useAnalysisJob(refetch)
+  const { data, loading, error } = usePageData('/api/movement')
 
   const status = loading ? 'loading' : (error || !data) ? 'empty' : 'ready'
 
@@ -204,7 +201,7 @@ export default function Movement() {
   })
 
   return (
-    <ReplayPage status={status} analysis={analysis}>
+    <ReplayPage status={status}>
       <div className="anim-fade-in">
         <div className="relative overflow-hidden border-b border-white/6"
           style={{ background: 'linear-gradient(135deg,rgba(37,99,235,0.10) 0%,#05070f 40%,#05070f 60%,rgba(234,88,12,0.10) 100%)' }}>
@@ -222,7 +219,6 @@ export default function Movement() {
                 <p className="mt-1 text-sm text-white/30 truncate max-w-lg">{data.replayName}</p>
               )}
             </div>
-            <UploadReplay onAnalysisStart={analysis.handleAnalysisStart} compact />
           </div>
         </div>
 

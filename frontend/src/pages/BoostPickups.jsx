@@ -7,17 +7,16 @@ import { HeatmapLegendFooter } from "@/features/boost/components/HeatmapLegendFo
 
 export default function BoostPickups() {
   const [filter, setFilter] = useState("all");
-  const { status, meta, players, pads, metrics, analysis } = useBoostPickups();
+  const { status, meta, players, pads, metrics } = useBoostPickups();
 
   return (
-    <ReplayPage status={status} analysis={analysis} error={null}>
+    <ReplayPage status={status} error={null}>
       <div className="anim-fade-in">
         <BoostPickupsHeader
           meta={meta}
           metrics={metrics}
           filter={filter}
           onFilterChange={setFilter}
-          onUpload={analysis.handleAnalysisStart}
         />
         <main className="mx-auto max-w-7xl px-8 py-8">
           <TeamHeatmapColumns players={players} pads={pads} filter={filter} />

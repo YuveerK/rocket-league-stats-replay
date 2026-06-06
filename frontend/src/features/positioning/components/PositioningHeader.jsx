@@ -5,7 +5,7 @@ import { BLUE, GREEN, ORANGE, PURPLE } from '@/lib/colors'
 import { fmt, fmtDuration, fmtPct, shortName } from '@/lib/formatters'
 import { POSITIONING_HEADER_GRADIENT } from '@/features/positioning/constants'
 
-export function PositioningHeader({ data, model, onUpload }) {
+export function PositioningHeader({ data, model }) {
   const { blue, orange } = model.teams
   const { closestPlayer, mostDefensive } = model
 
@@ -17,7 +17,6 @@ export function PositioningHeader({ data, model, onUpload }) {
       eyebrowColor="#93c5fd"
       title="Positioning Analytics"
       description="Field thirds, ball proximity, and defensive spacing - team-relative zones from car position samples."
-      onUpload={onUpload}
     >
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
         <HeroMetric

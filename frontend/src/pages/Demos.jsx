@@ -31,7 +31,6 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import ReplayPage from "@/components/layout/ReplayPage";
 import DemoMatrix from "@/components/DemoMatrix";
 import { usePageData } from "@/hooks/usePageData";
-import { useAnalysisJob } from "@/hooks/useAnalysisJob";
 import { n, fmt, fmtDuration, shortName } from "@/lib/formatters";
 import {
   BLUE,
@@ -313,8 +312,7 @@ function TeamPie({ teamRows }) {
 }
 
 export default function Demos() {
-  const { data, loading, error, refetch } = usePageData("/api/overview");
-  const analysis = useAnalysisJob(refetch);
+  const { data, loading, error } = usePageData("/api/overview");
   const status = loading ? "loading" : error || !data ? "empty" : "ready";
 
   const players = useMemo(
@@ -370,7 +368,7 @@ export default function Demos() {
   const killEvents = (data?.events ?? []).filter((e) => e.type === "kill");
 
   return (
-    <ReplayPage status={status} analysis={analysis} error={error}>
+    <ReplayPage status={status} error={error}>
       <div className="anim-fade-in">
         <PageHeader
           gradient={DEMOS_HEADER_GRADIENT}
@@ -379,7 +377,6 @@ export default function Demos() {
           eyebrowColor="#fda4af"
           title="Demolition Analytics"
           description="Team demo pressure, player demolition leaders and who absorbed the most bumps into respawn."
-          onUpload={analysis.handleAnalysisStart}
         >
           <div className="grid grid-cols-1 gap-3 md:grid-cols-5">
             <HeroMetric

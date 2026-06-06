@@ -7,19 +7,18 @@ import { TeamFieldControlPanel } from "@/features/positioning/components/TeamFie
 import { usePositioningAnalytics } from "@/features/positioning/hooks/usePositioningAnalytics";
 
 export default function Positioning() {
-  const { data, error, status, analysis, model } = usePositioningAnalytics();
+  const { data, error, status, model } = usePositioningAnalytics();
 
   if (status !== "ready") {
-    return <ReplayPage status={status} analysis={analysis} error={error} />;
+    return <ReplayPage status={status} error={error} />;
   }
 
   return (
-    <ReplayPage status={status} analysis={analysis} error={error}>
+    <ReplayPage status={status} error={error}>
       <div className="anim-fade-in">
         <PositioningHeader
           data={data}
           model={model}
-          onUpload={analysis.handleAnalysisStart}
         />
 
         <main className="mx-auto max-w-7xl space-y-6 px-8 py-8">

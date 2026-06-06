@@ -15,7 +15,7 @@ const FILTERS = [
   { value: 'small', label: 'Small Pads' },
 ]
 
-export function BoostPickupsHeader({ meta, metrics, filter, onFilterChange, onUpload }) {
+export function BoostPickupsHeader({ meta, metrics, filter, onFilterChange }) {
   const { totalEvents, totalBig, totalSmall, totalStolen, topCollector, topStealer } = metrics
 
   return (
@@ -26,7 +26,6 @@ export function BoostPickupsHeader({ meta, metrics, filter, onFilterChange, onUp
       eyebrowColor="#93c5fd"
       title="Boost Pickup Heatmaps"
       description="Every boost pad visit mapped per player — hot pads reveal farming patterns and cross-field steals."
-      onUpload={onUpload}
     >
       <div className="grid grid-cols-1 gap-3 md:grid-cols-5">
         <HeroMetric label="Pickup Events"  value={fmt(totalEvents)}                        detail="Total across all players"          color={BLUE}                       Icon={Database}        />

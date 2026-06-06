@@ -4,7 +4,6 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import ReplayPage from "@/components/layout/ReplayPage";
 import { HeroMetric } from "@/components/ui/HeroMetric";
 import { usePageData } from "@/hooks/usePageData";
-import { useAnalysisJob } from "@/hooks/useAnalysisJob";
 import { formatDuration } from "@/lib/formatters";
 
 const CORE_HEADER_GRADIENT =
@@ -13,8 +12,7 @@ const CORE_HEADER_GRADIENT =
   "linear-gradient(135deg,#080b16 0%,#05070f 58%,#080b16 100%)";
 
 export default function Core() {
-  const { data, loading, error, refetch } = usePageData("/api/overview");
-  const analysis = useAnalysisJob(refetch);
+  const { data, loading, error } = usePageData("/api/overview");
 
   const status = loading ? "loading" : error || !data ? "empty" : "ready";
 
@@ -27,7 +25,7 @@ export default function Core() {
     (data?.teams?.[1]?.demosInflicted ?? 0);
 
   return (
-    <ReplayPage status={status} analysis={analysis} error={error}>
+    <ReplayPage status={status} error={error}>
       {data && (
         <div className="anim-fade-in">
           <PageHeader
@@ -37,8 +35,7 @@ export default function Core() {
             eyebrowColor="#34d399"
             title="Core Stats Command Center"
             description="High-signal team and player graphs for scoring pressure, conversion, defensive context and demos."
-            onUpload={analysis.handleAnalysisStart}
-          >
+            >
             <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
               <HeroMetric
                 label="Final Score"

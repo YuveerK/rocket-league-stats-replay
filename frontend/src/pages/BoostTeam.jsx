@@ -26,7 +26,6 @@ import { ChartTooltip } from "@/components/ui/ChartTooltip";
 import { PageHeader } from "@/components/layout/PageHeader";
 import ReplayPage from "@/components/layout/ReplayPage";
 import { usePageData } from "@/hooks/usePageData";
-import { useAnalysisJob } from "@/hooks/useAnalysisJob";
 import { n, fmt, fmtPct, fmtSeconds, shortName } from "@/lib/formatters";
 import { BLUE, ORANGE, GREEN, GOLD, RED, PURPLE } from "@/lib/colors";
 
@@ -287,8 +286,7 @@ function DriverRows({ players }) {
 }
 
 export default function BoostTeam() {
-  const { data, loading, error, refetch } = usePageData("/api/boost-team");
-  const analysis = useAnalysisJob(refetch);
+  const { data, loading, error } = usePageData("/api/boost-team");
 
   const status = loading ? "loading" : error || !data ? "empty" : "ready";
 
@@ -397,7 +395,7 @@ export default function BoostTeam() {
     n(blue.amountStolen) >= n(orange.amountStolen) ? "Blue" : "Orange";
 
   return (
-    <ReplayPage status={status} analysis={analysis} error={error}>
+    <ReplayPage status={status} error={error}>
       <div className="anim-fade-in">
         <PageHeader
           gradient={HEADER_GRADIENT}
@@ -406,7 +404,6 @@ export default function BoostTeam() {
           eyebrowColor="#6ee7b7"
           title="Team Boost Analytics"
           description="Boost economy, reserve pressure, pad control, stolen boost and overfill waste by team."
-          onUpload={analysis.handleAnalysisStart}
         >
           <div className="grid grid-cols-1 gap-3 md:grid-cols-5">
             <HeroMetric

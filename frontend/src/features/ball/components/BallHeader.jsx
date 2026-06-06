@@ -6,7 +6,7 @@ import { fmtSpeed, fmtSpeedDetail } from '@/features/ball/lib/ballFormatters'
 import { fmt, fmtDuration, fmtPct } from '@/lib/formatters'
 import { BLUE, GOLD, ORANGE, PURPLE } from '@/lib/colors'
 
-export function BallHeader({ data, model, onUpload }) {
+export function BallHeader({ data, model }) {
   return (
     <PageHeader
       gradient={BALL_HEADER_GRADIENT}
@@ -15,7 +15,6 @@ export function BallHeader({ data, model, onUpload }) {
       eyebrowColor="#67e8f9"
       title="Ball Analytics"
       description="Replay-backed ball heatmap, pressure, territory, speed and aerial intelligence."
-      onUpload={onUpload}
     >
       <div className="grid grid-cols-1 gap-3 md:grid-cols-5">
         <HeroMetric label="Match Time" value={fmtDuration(data?.matchDuration)} color="#e5e7eb" Icon={Clock} />

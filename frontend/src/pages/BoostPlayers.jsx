@@ -29,7 +29,6 @@ import { ChartTooltip } from "@/components/ui/ChartTooltip";
 import { PageHeader } from "@/components/layout/PageHeader";
 import ReplayPage from "@/components/layout/ReplayPage";
 import { usePageData } from "@/hooks/usePageData";
-import { useAnalysisJob } from "@/hooks/useAnalysisJob";
 import { n, fmt, fmtPct, fmtSeconds, shortName } from "@/lib/formatters";
 import { BLUE, ORANGE, TEAM_COLORS, TEAM_LABELS } from "@/lib/colors";
 
@@ -481,8 +480,7 @@ function DetailTable({ players }) {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function BoostPlayers() {
-  const { data, loading, error, refetch } = usePageData("/api/boost-players");
-  const analysis = useAnalysisJob(refetch);
+  const { data, loading, error } = usePageData("/api/boost-players");
 
   const status = loading ? "loading" : error || !data ? "empty" : "ready";
 
@@ -571,7 +569,7 @@ export default function BoostPlayers() {
   );
 
   return (
-    <ReplayPage status={status} analysis={analysis} error={error}>
+    <ReplayPage status={status} error={error}>
       <div className="anim-fade-in">
         <PageHeader
           gradient={HEADER_GRADIENT}
@@ -580,7 +578,6 @@ export default function BoostPlayers() {
           eyebrowColor="#93c5fd"
           title="Boost Player Analytics"
           description="Individual boost economy, reserve pressure, pad control, stolen pickups, supersonic spend and overfill waste."
-          onUpload={analysis.handleAnalysisStart}
         >
           <div className="grid grid-cols-1 gap-3 md:grid-cols-5">
             <HeroMetric
