@@ -54,7 +54,7 @@ export default function App() {
             <span className="font-bold text-sm text-white/80 tracking-tight">Replay Parser</span>
           </header>
 
-          <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden">
+          <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden" style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 5rem)' }}>
             <Routes>
               <Route path="/"               element={<Overview />} />
               <Route path="/replays"        element={<ReplayLibrary />} />

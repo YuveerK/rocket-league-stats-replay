@@ -100,7 +100,7 @@ export default function Sidebar({ isOpen, onClose }) {
 
       <div className="h-px mx-4 mb-3" style={{ background: 'rgba(255,255,255,0.06)' }} />
 
-      <nav className="min-h-0 flex-1 overflow-y-auto space-y-0.5 px-2">
+      <nav className="min-h-0 flex-1 overflow-y-auto space-y-0.5 px-2" style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 5rem)' }}>
         {NAV.map(({ section, items }) => (
           <div key={section} className="mb-1">
             <p className="px-3 pt-3 pb-1 text-[10px] font-bold tracking-[0.14em] uppercase"
