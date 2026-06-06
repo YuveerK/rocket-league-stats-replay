@@ -8,10 +8,40 @@ export function OverlapTable({ title, rows, relation, playerA, playerB, accent }
 
   return (
     <Panel eyebrow={relation} title={title} subtitle="People both compared players have sampled" Icon={Icon} accent={accent}>
-      <div className="max-h-[340px] overflow-auto">
-        <table className="w-full min-w-[660px] text-sm">
+      {/* Mobile: cards */}
+      <div className="max-h-85 space-y-2 overflow-y-auto md:hidden">
+        {rows.map((row) => (
+          <div key={row.playerId} className="rounded-xl border border-white/6 bg-white/3 p-3">
+            <div className="text-xs font-black text-white/72">{row.playerName}</div>
+            <div className="mt-0.5 text-[11px] text-white/28">{row.platform ?? 'Unknown platform'}</div>
+            <div className="mt-2.5 grid grid-cols-2 gap-3 border-t border-white/6 pt-2.5 text-xs">
+              <div>
+                <div className="truncate text-[11px] text-white/30">{playerA}</div>
+                <div className="stat-num mt-0.5 text-white/58">{fmt(row.playerA.matches)} games</div>
+                <div className="stat-num font-black" style={{ color: row.playerA.winRate >= 50 ? GREEN : RED }}>
+                  {fmtPct(row.playerA.winRate)}
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="truncate text-[11px] text-white/30">{playerB}</div>
+                <div className="stat-num mt-0.5 text-white/58">{fmt(row.playerB.matches)} games</div>
+                <div className="stat-num font-black" style={{ color: row.playerB.winRate >= 50 ? GREEN : RED }}>
+                  {fmtPct(row.playerB.winRate)}
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+        {!rows.length && (
+          <div className="py-8 text-center text-sm text-white/30">No overlap found.</div>
+        )}
+      </div>
+
+      {/* Desktop: table */}
+      <div className="hidden max-h-85 overflow-auto md:block">
+        <table className="w-full text-sm">
           <thead className="sticky top-0 z-10 bg-[#0c0f1a]/95 backdrop-blur">
-            <tr className="border-b border-white/[0.06] text-xs font-bold text-white/32">
+            <tr className="border-b border-white/6 text-xs font-bold text-white/32">
               <th className="px-3 py-3 text-left">Player</th>
               <th className="px-3 py-3 text-right">{playerA}</th>
               <th className="px-3 py-3 text-right">W%</th>
@@ -21,7 +51,7 @@ export function OverlapTable({ title, rows, relation, playerA, playerB, accent }
           </thead>
           <tbody>
             {rows.map((row) => (
-              <tr key={row.playerId} className="border-b border-white/[0.045] transition-colors hover:bg-white/[0.025]">
+              <tr key={row.playerId} className="border-b border-white/4.5 transition-colors hover:bg-white/2.5">
                 <td className="px-3 py-3">
                   <div className="truncate text-xs font-black text-white/72">{row.playerName}</div>
                   <div className="mt-0.5 text-[11px] text-white/28">{row.platform ?? 'Unknown platform'}</div>

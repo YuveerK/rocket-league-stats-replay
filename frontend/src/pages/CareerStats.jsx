@@ -308,60 +308,113 @@ function MatchTable({ matches }) {
   }
 
   return (
-    <div className="max-h-[560px] overflow-auto">
-      <table className="w-full min-w-135 text-sm">
-        <thead className="sticky top-0 z-10 bg-[#0c0f1a]/95 backdrop-blur">
-          <tr className="border-b border-white/[0.06] text-xs font-bold text-white/32">
-            <th className="px-3 py-3 text-left">Match</th>
-            <th className="px-3 py-3 text-left">Map</th>
-            <th className="hidden px-3 py-3 text-left sm:table-cell">Playlist</th>
-            <th className="px-3 py-3 text-center">Score</th>
-            <th className="px-3 py-3 text-center">Result</th>
-            <th className="px-3 py-3 text-right">Pts</th>
-            <th className="px-3 py-3 text-right">G</th>
-            <th className="px-3 py-3 text-right">A</th>
-            <th className="px-3 py-3 text-right">Sv</th>
-            <th className="hidden px-3 py-3 text-right sm:table-cell">Sh%</th>
-            <th className="hidden px-3 py-3 text-right md:table-cell">BPM</th>
-            <th className="hidden px-3 py-3 text-right md:table-cell">Used</th>
-            <th className="hidden px-3 py-3 text-right md:table-cell">Pads</th>
-            <th className="hidden px-3 py-3 text-right md:table-cell">Demos</th>
-          </tr>
-        </thead>
-        <tbody>
-          {matches.map((match) => (
-            <tr key={match.replayId} className="border-b border-white/[0.045] transition-colors hover:bg-white/[0.025]">
-              <td className="px-3 py-3">
-                <div className="flex items-center gap-2">
-                  <CalendarDays size={13} className="text-white/24" />
-                  <div>
-                    <div className="text-xs font-bold text-white/62">{formatReplayDate(match.date)}</div>
-                    <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-white/28">
-                      {match.overtime && <span className="font-black" style={{ color: GOLD }}>OT</span>}
-                      {match.forfeit && <span className="font-black" style={{ color: RED }}>Forfeit</span>}
-                      {!match.overtime && !match.forfeit && <span>Regulation</span>}
+    <>
+      {/* Mobile: card list */}
+      <div className="max-h-[560px] space-y-2.5 overflow-y-auto md:hidden">
+        {matches.map((match) => (
+          <div key={match.replayId} className="rounded-xl border border-white/[0.07] bg-white/[0.03] p-3">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 text-xs font-bold text-white/62">
+                  <CalendarDays size={12} className="shrink-0 text-white/24" />
+                  {formatReplayDate(match.date)}
+                  {match.overtime && <span className="text-[10px] font-black" style={{ color: GOLD }}>OT</span>}
+                  {match.forfeit && <span className="text-[10px] font-black" style={{ color: RED }}>FF</span>}
+                </div>
+                <div className="mt-1 text-xs font-bold text-white/70">{mapLabel(match.mapName)}</div>
+                <div className="text-[11px] text-white/35">{playlistLabel(match.playlist)}</div>
+              </div>
+              <div className="flex shrink-0 flex-col items-end gap-1.5">
+                <ResultBadge result={match.result} />
+                <div className="font-mono text-xs"><ScoreCell match={match} /></div>
+              </div>
+            </div>
+            <div className="mt-2.5 grid grid-cols-4 gap-1 border-t border-white/[0.06] pt-2.5 text-center">
+              {[['Pts', fmt(match.score), 'text-white/82'], ['G', fmt(match.goals), 'text-white/70'], ['A', fmt(match.assists), 'text-white/70'], ['Sv', fmt(match.saves), 'text-white/70']].map(([label, val, cls]) => (
+                <div key={label}>
+                  <div className={`stat-num text-sm font-black ${cls}`}>{val}</div>
+                  <div className="text-[10px] text-white/28">{label}</div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-1.5 grid grid-cols-4 gap-1 text-center">
+              <div>
+                <div className="stat-num text-xs text-white/48">{fmt(match.shootingPercentage, 0)}%</div>
+                <div className="text-[10px] text-white/22">Sh%</div>
+              </div>
+              <div>
+                <div className="stat-num text-xs text-white/48">{fmt(match.bpm, 0)}</div>
+                <div className="text-[10px] text-white/22">BPM</div>
+              </div>
+              <div>
+                <div className="stat-num text-xs text-white/45">{fmt(match.boostUsed, 0)}</div>
+                <div className="text-[10px] text-white/22">Used</div>
+              </div>
+              <div>
+                <div className="stat-num text-xs text-sky-300/80">{fmt((match.bigPads ?? 0) + (match.smallPads ?? 0))}</div>
+                <div className="text-[10px] text-white/22">Pads</div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop: full table */}
+      <div className="hidden max-h-[560px] overflow-auto md:block">
+        <table className="w-full text-sm">
+          <thead className="sticky top-0 z-10 bg-[#0c0f1a]/95 backdrop-blur">
+            <tr className="border-b border-white/[0.06] text-xs font-bold text-white/32">
+              <th className="px-3 py-3 text-left">Match</th>
+              <th className="px-3 py-3 text-left">Map</th>
+              <th className="px-3 py-3 text-left">Playlist</th>
+              <th className="px-3 py-3 text-center">Score</th>
+              <th className="px-3 py-3 text-center">Result</th>
+              <th className="px-3 py-3 text-right">Pts</th>
+              <th className="px-3 py-3 text-right">G</th>
+              <th className="px-3 py-3 text-right">A</th>
+              <th className="px-3 py-3 text-right">Sv</th>
+              <th className="px-3 py-3 text-right">Sh%</th>
+              <th className="px-3 py-3 text-right">BPM</th>
+              <th className="px-3 py-3 text-right">Used</th>
+              <th className="px-3 py-3 text-right">Pads</th>
+              <th className="px-3 py-3 text-right">Demos</th>
+            </tr>
+          </thead>
+          <tbody>
+            {matches.map((match) => (
+              <tr key={match.replayId} className="border-b border-white/[0.045] transition-colors hover:bg-white/[0.025]">
+                <td className="px-3 py-3">
+                  <div className="flex items-center gap-2">
+                    <CalendarDays size={13} className="text-white/24" />
+                    <div>
+                      <div className="text-xs font-bold text-white/62">{formatReplayDate(match.date)}</div>
+                      <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-white/28">
+                        {match.overtime && <span className="font-black" style={{ color: GOLD }}>OT</span>}
+                        {match.forfeit && <span className="font-black" style={{ color: RED }}>Forfeit</span>}
+                        {!match.overtime && !match.forfeit && <span>Regulation</span>}
+                      </div>
                     </div>
                   </div>
-                </div>
-              </td>
-              <td className="px-3 py-3 text-xs font-bold text-white/65">{mapLabel(match.mapName)}</td>
-              <td className="hidden px-3 py-3 text-xs text-white/38 sm:table-cell">{playlistLabel(match.playlist)}</td>
-              <td className="px-3 py-3 text-center"><ScoreCell match={match} /></td>
-              <td className="px-3 py-3 text-center"><ResultBadge result={match.result} /></td>
-              <td className="stat-num px-3 py-3 text-right font-black text-white/82">{fmt(match.score)}</td>
-              <td className="stat-num px-3 py-3 text-right text-white/70">{fmt(match.goals)}</td>
-              <td className="stat-num px-3 py-3 text-right text-white/70">{fmt(match.assists)}</td>
-              <td className="stat-num px-3 py-3 text-right text-white/70">{fmt(match.saves)}</td>
-              <td className="stat-num hidden px-3 py-3 text-right text-white/48 sm:table-cell">{fmt(match.shootingPercentage, 0)}%</td>
-              <td className="stat-num hidden px-3 py-3 text-right text-white/48 md:table-cell">{fmt(match.bpm, 0)}</td>
-              <td className="stat-num hidden px-3 py-3 text-right text-white/45 md:table-cell">{fmt(match.boostUsed, 0)}</td>
-              <td className="stat-num hidden px-3 py-3 text-right text-sky-300/80 md:table-cell">{fmt((match.bigPads ?? 0) + (match.smallPads ?? 0))}</td>
-              <td className="stat-num hidden px-3 py-3 text-right text-rose-300/80 md:table-cell">{match.netDemos > 0 ? `+${fmt(match.netDemos)}` : fmt(match.netDemos)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+                </td>
+                <td className="px-3 py-3 text-xs font-bold text-white/65">{mapLabel(match.mapName)}</td>
+                <td className="px-3 py-3 text-xs text-white/38">{playlistLabel(match.playlist)}</td>
+                <td className="px-3 py-3 text-center"><ScoreCell match={match} /></td>
+                <td className="px-3 py-3 text-center"><ResultBadge result={match.result} /></td>
+                <td className="stat-num px-3 py-3 text-right font-black text-white/82">{fmt(match.score)}</td>
+                <td className="stat-num px-3 py-3 text-right text-white/70">{fmt(match.goals)}</td>
+                <td className="stat-num px-3 py-3 text-right text-white/70">{fmt(match.assists)}</td>
+                <td className="stat-num px-3 py-3 text-right text-white/70">{fmt(match.saves)}</td>
+                <td className="stat-num px-3 py-3 text-right text-white/48">{fmt(match.shootingPercentage, 0)}%</td>
+                <td className="stat-num px-3 py-3 text-right text-white/48">{fmt(match.bpm, 0)}</td>
+                <td className="stat-num px-3 py-3 text-right text-white/45">{fmt(match.boostUsed, 0)}</td>
+                <td className="stat-num px-3 py-3 text-right text-sky-300/80">{fmt((match.bigPads ?? 0) + (match.smallPads ?? 0))}</td>
+                <td className="stat-num px-3 py-3 text-right text-rose-300/80">{match.netDemos > 0 ? `+${fmt(match.netDemos)}` : fmt(match.netDemos)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
   )
 }
 
@@ -692,29 +745,45 @@ export default function CareerStats() {
                 </div>
               </div>
 
-              <div className="mt-5 overflow-auto border-t border-white/[0.06] pt-4">
-                <table className="w-full min-w-full text-sm">
-                  <thead>
-                    <tr className="text-xs font-bold text-white/30">
-                      <th className="pb-3 text-left">Map</th>
-                      <th className="pb-3 text-right">GP</th>
-                      <th className="pb-3 text-right">W%</th>
-                      <th className="pb-3 text-right">Avg G</th>
-                      <th className="pb-3 text-right">Avg Score</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {mapStats.map((map) => (
-                      <tr key={map.mapName} className="border-t border-white/[0.045]">
-                        <td className="py-2.5 text-xs font-bold text-white/65">{mapLabel(map.mapName)}</td>
-                        <td className="stat-num py-2.5 text-right text-white/50">{fmt(map.matches)}</td>
-                        <td className="stat-num py-2.5 text-right font-black" style={{ color: n(map.winRate) >= 50 ? GREEN : RED }}>{fmtPct(map.winRate)}</td>
-                        <td className="stat-num py-2.5 text-right text-white/55">{fmt(map.avgGoals, 2)}</td>
-                        <td className="stat-num py-2.5 text-right text-white/55">{fmt(map.avgScore, 1)}</td>
+              <div className="mt-5 border-t border-white/6 pt-4">
+                {/* Mobile: compact row cards */}
+                <div className="space-y-1.5 md:hidden">
+                  {mapStats.map((map) => (
+                    <div key={map.mapName} className="flex items-center justify-between gap-3 rounded-xl border border-white/6 bg-white/3 px-3 py-2.5">
+                      <div className="min-w-0 truncate text-xs font-bold text-white/65">{mapLabel(map.mapName)}</div>
+                      <div className="flex shrink-0 items-center gap-4 text-right">
+                        <div className="text-[11px] text-white/40">{fmt(map.matches)} GP</div>
+                        <div className="stat-num min-w-10 text-sm font-black" style={{ color: n(map.winRate) >= 50 ? GREEN : RED }}>{fmtPct(map.winRate)}</div>
+                        <div className="stat-num min-w-8 text-xs text-white/55">{fmt(map.avgScore, 1)}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {/* Desktop: table */}
+                <div className="hidden overflow-auto md:block">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-xs font-bold text-white/30">
+                        <th className="pb-3 text-left">Map</th>
+                        <th className="pb-3 text-right">GP</th>
+                        <th className="pb-3 text-right">W%</th>
+                        <th className="pb-3 text-right">Avg G</th>
+                        <th className="pb-3 text-right">Avg Score</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {mapStats.map((map) => (
+                        <tr key={map.mapName} className="border-t border-white/4.5">
+                          <td className="py-2.5 text-xs font-bold text-white/65">{mapLabel(map.mapName)}</td>
+                          <td className="stat-num py-2.5 text-right text-white/50">{fmt(map.matches)}</td>
+                          <td className="stat-num py-2.5 text-right font-black" style={{ color: n(map.winRate) >= 50 ? GREEN : RED }}>{fmtPct(map.winRate)}</td>
+                          <td className="stat-num py-2.5 text-right text-white/55">{fmt(map.avgGoals, 2)}</td>
+                          <td className="stat-num py-2.5 text-right text-white/55">{fmt(map.avgScore, 1)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </Panel>
 
