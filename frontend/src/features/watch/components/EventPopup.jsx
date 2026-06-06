@@ -60,13 +60,13 @@ export function EventPopup({ event }) {
       )}
 
       <div
-        className="relative flex flex-col items-center gap-3 rounded-3xl px-14 py-8 text-center"
+        className="relative flex flex-col items-center gap-3 rounded-3xl px-8 py-6 text-center sm:px-14 sm:py-8"
         style={{
           background: `linear-gradient(135deg, ${cfg.bg} 0%, rgba(2,4,12,0.82) 100%)`,
           border: `1.5px solid ${cfg.border}`,
           boxShadow: `0 0 0 1px ${cfg.border}, 0 32px 80px rgba(0,0,0,0.7), 0 0 80px ${cfg.glow}`,
           backdropFilter: 'blur(28px)',
-          minWidth: 320,
+          minWidth: 'min(260px, calc(100vw - 48px))',
         }}
       >
         <div
@@ -91,7 +91,7 @@ export function EventPopup({ event }) {
         <div
           className="font-black uppercase"
           style={{
-            fontSize: isGoal ? 72 : 56,
+            fontSize: `clamp(${isGoal ? 44 : 34}px, ${isGoal ? 12 : 9}vw, ${isGoal ? 72 : 56}px)`,
             lineHeight: 1,
             color: cfg.color,
             textShadow: `0 0 40px ${cfg.glow}, 0 0 80px ${cfg.glow}`,

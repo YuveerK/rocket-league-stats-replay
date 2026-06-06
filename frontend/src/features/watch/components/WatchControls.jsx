@@ -17,7 +17,7 @@ export function WatchControls({
 
   return (
     <section className="absolute inset-x-0 bottom-0 backdrop-blur-2xl"
-      style={{ background: 'rgba(2,4,12,0.94)', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+      style={{ background: 'rgba(2,4,12,0.94)', borderTop: '1px solid rgba(255,255,255,0.05)', paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 0.5rem)' }}>
 
       {/* Timeline */}
       <div className="relative px-5 pt-5 pb-1">
@@ -71,7 +71,7 @@ export function WatchControls({
 
         <div className="flex-1" />
 
-        <label className="flex items-center gap-2.5 rounded-xl px-3 py-2"
+        <label className="hidden items-center gap-2.5 rounded-xl px-3 py-2 sm:flex"
           style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
           <span className="text-[10px] font-black uppercase tracking-widest whitespace-nowrap" style={{ color: 'rgba(255,255,255,0.25)' }}>
             Pan speed

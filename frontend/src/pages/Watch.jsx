@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { BarChart2, X } from "lucide-react";
 import { BLUE, ORANGE } from "@/features/watch/constants";
 import {
   eventPlaybackSeconds,
@@ -45,6 +46,7 @@ export default function Watch() {
   const [playerBoosts, setPlayerBoosts] = useState({});
   const [playerBoosting, setPlayerBoosting] = useState({});
   const [popupEvent, setPopupEvent] = useState(null);
+  const [panelOpen, setPanelOpen] = useState(false);
   const popupKeyRef = useRef(0);
 
   const usesMappedPlayback = hasPlaybackTimeMapping(data);
@@ -178,7 +180,26 @@ export default function Watch() {
         <KickoffCountdown label={countdown} />
         <EventPopup event={popupEvent} />
 
-        <section className="pointer-events-none absolute left-4 top-4 flex w-52 flex-col gap-2.5">
+        {/* Mobile toggle for player stats panel */}
+        <button
+          type="button"
+          onClick={() => setPanelOpen((v) => !v)}
+          className="absolute left-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-xl sm:hidden"
+          style={{
+            background: "rgba(5,8,22,0.85)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            color: "rgba(255,255,255,0.5)",
+          }}
+          aria-label={panelOpen ? "Hide stats" : "Show stats"}
+        >
+          {panelOpen ? <X size={15} /> : <BarChart2 size={15} />}
+        </button>
+
+        <section
+          className={`pointer-events-none absolute flex-col gap-2.5 sm:left-4 sm:top-4 sm:flex sm:w-52 ${
+            panelOpen ? "left-3 top-14 flex w-44" : "hidden"
+          }`}
+        >
           {/* Clock */}
           <div
             className="rounded-2xl p-3.5 backdrop-blur-2xl"

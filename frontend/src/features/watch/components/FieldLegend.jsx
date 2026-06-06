@@ -1,6 +1,6 @@
 export function FieldLegend() {
   return (
-    <section className="pointer-events-none absolute right-4 top-4 w-44">
+    <section className="pointer-events-none absolute right-4 top-4 hidden w-44 sm:block">
       <div className="rounded-2xl p-3 backdrop-blur-2xl"
         style={{ background: 'rgba(5,8,22,0.85)', border: '1px solid rgba(255,255,255,0.06)', boxShadow: '0 24px 48px rgba(0,0,0,0.5)' }}>
         <div className="mb-2 text-[9px] font-black uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.22)' }}>
