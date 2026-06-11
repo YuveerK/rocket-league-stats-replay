@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const ROOT_DIR = process.cwd();
 const NETWORK_JSON_PATH = path.join(ROOT_DIR, "output", "replay-network.json");
@@ -76,10 +77,7 @@ function round(value, decimals = 2) {
   return Number(value.toFixed(decimals));
 }
 
-async function main() {
-  const buffer = await fs.readFile(NETWORK_JSON_PATH);
-  const replay = readJsonFileSafe(buffer);
-
+export function extractMatchMeta(replay) {
   const frames = replay.network_frames?.frames ?? [];
   const objects = replay.objects ?? [];
   const names = replay.names ?? [];
@@ -120,10 +118,8 @@ async function main() {
     for (const update of frame.updated_actors ?? []) {
       const actorId = getActorId(update);
       if (actorId === null) continue;
-
       const activeActor = activeActors.get(actorId);
       if (!activeActor) continue;
-
       const activeObjectName = activeActor.objectName;
       const updateObjectName = getObjectName(update, objects, names);
       const attribute = update.attribute ?? {};
@@ -141,11 +137,7 @@ async function main() {
         if (val !== undefined) playlist = val;
       }
 
-      // PRI player name
-      if (
-        activeObjectName === PRI_OBJECT_NAME &&
-        updateObjectName === "Engine.PlayerReplicationInfo:PlayerName"
-      ) {
+      if (activeObjectName === PRI_OBJECT_NAME && updateObjectName === "Engine.PlayerReplicationInfo:PlayerName") {
         const info = ensurePri(actorId);
         const strings = findStrings(attribute);
         const name =
@@ -154,7 +146,6 @@ async function main() {
         if (name) info.name = name;
       }
 
-      // Stat milestones
       if (activeObjectName === PRI_OBJECT_NAME && updateObjectName === STAT_EVENT_NAME) {
         const statEvent = attribute?.StatEvent;
         if (statEvent) {
@@ -162,12 +153,7 @@ async function main() {
           if (objectId !== -1) {
             const milestoneName = getLookupName(objects, objectId) ?? `object_${objectId}`;
             const playerName = resolvePlayerName(actorId);
-            statMilestones.push({
-              frameIndex,
-              replayTimeSeconds: round(time),
-              playerName,
-              milestone: milestoneName,
-            });
+            statMilestones.push({ frameIndex, replayTimeSeconds: round(time), playerName, milestone: milestoneName });
           }
         }
       }
@@ -204,7 +190,7 @@ async function main() {
     goalActorName: h.GoalActorName ?? null,
   }));
 
-  const output = {
+  return {
     replayName: replay.properties?.ReplayName ?? null,
     overtime,
     forfeit,
@@ -229,24 +215,32 @@ async function main() {
       "Stat milestones come from TAGame.PRI_TA:ReplicatedStatEvent updates (hat tricks, epic saves, etc.).",
     ],
   };
+}
+
+async function main() {
+  const buffer = await fs.readFile(NETWORK_JSON_PATH);
+  const replay = readJsonFileSafe(buffer);
+  const output = extractMatchMeta(replay);
 
   await fs.writeFile(OUTPUT_PATH, JSON.stringify(output, null, 2), "utf8");
 
-  console.log(`\nOvertime: ${overtime} | Forfeit: ${forfeit}`);
+  console.log(`\nOvertime: ${output.overtime} | Forfeit: ${output.forfeit}`);
   console.log(`Match type: ${output.matchType ?? "unknown"} | Team size: ${output.teamSize ?? "?"}`);
-  console.log(`Server region: ${serverRegion ?? "unknown"} | Playlist: ${playlist ?? "unknown"}`);
+  console.log(`Server region: ${output.serverRegion ?? "unknown"} | Playlist: ${output.playlist ?? "unknown"}`);
   console.log(`Recorder: ${output.recorderName ?? "unknown"}`);
   console.log(
-    `Players: ${players.map((p) => `${p.name} [${p.platform ?? "?"}${p.isBot ? " BOT" : ""}]`).join(", ")}`,
+    `Players: ${output.players.map((p) => `${p.name} [${p.platform ?? "?"}${p.isBot ? " BOT" : ""}]`).join(", ")}`,
   );
   console.log(
-    `Stat milestones: ${statMilestones.length > 0 ? statMilestones.map((m) => `${m.playerName}: ${m.milestone}`).join(", ") : "none"}`,
+    `Stat milestones: ${output.statMilestones.length > 0 ? output.statMilestones.map((m) => `${m.playerName}: ${m.milestone}`).join(", ") : "none"}`,
   );
   console.log(`\nSaved match meta to: ${OUTPUT_PATH}`);
 }
 
-main().catch((error) => {
-  console.error("Failed to extract match meta:");
-  console.error(error);
-  process.exit(1);
-});
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  main().catch((error) => {
+    console.error("Failed to extract match meta:");
+    console.error(error);
+    process.exit(1);
+  });
+}

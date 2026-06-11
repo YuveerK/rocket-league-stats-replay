@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const ROOT_DIR = process.cwd();
 
@@ -15,7 +16,7 @@ function readJsonFileSafe(buffer) {
     raw = buffer.toString("utf8");
   }
 
-  raw = raw.replace(/^\uFEFF/, "").trim();
+  raw = raw.replace(/^﻿/, "").trim();
   return JSON.parse(raw);
 }
 
@@ -235,7 +236,6 @@ function calculateBoostStats(
     const curr = normalized[i];
 
     // Do not compare boost across different boost actors.
-    // Actor switches can happen after respawns/goals and can look like fake boost usage.
     if (prev.boostActorId !== curr.boostActorId) continue;
 
     const diff = curr.boost - prev.boost;
@@ -316,10 +316,7 @@ function calculateBoostStats(
   };
 }
 
-async function main() {
-  const replayBuffer = await fs.readFile(NETWORK_JSON_PATH);
-  const replay = readJsonFileSafe(replayBuffer);
-
+export function extractBoostStatsV2(replay) {
   const frames = replay.network_frames?.frames ?? [];
   const objects = replay.objects ?? [];
   const names = replay.names ?? [];
@@ -544,6 +541,42 @@ async function main() {
     }
   }
 
+  // Reconcile censored network actors with unmatched header players by elimination.
+  {
+    const matchedHeaderNames = new Set(
+      [...priInfo.values()]
+        .map((i) => i.name)
+        .filter((n) => n !== null && headerPlayersByName.has(n)),
+    );
+    const unmatchedHeaderPlayers = headerPlayers.filter(
+      (p) => !matchedHeaderNames.has(p.Name),
+    );
+    const censoredActors = [...priInfo.values()].filter(
+      (i) => i.name !== null && !headerPlayersByName.has(i.name),
+    );
+
+    if (unmatchedHeaderPlayers.length === 1 && censoredActors.length === 1) {
+      censoredActors[0].name = unmatchedHeaderPlayers[0].Name;
+    } else if (unmatchedHeaderPlayers.length > 1 && censoredActors.length > 0) {
+      const assigned = new Set();
+      for (const actor of censoredActors) {
+        const actorTeam =
+          actor.team ??
+          (actor.teamActorId !== null
+            ? (teamActorToIndex.get(actor.teamActorId) ?? null)
+            : null);
+        if (actorTeam === null) continue;
+        const candidates = unmatchedHeaderPlayers.filter(
+          (p) => p.Team === actorTeam && !assigned.has(p.Name),
+        );
+        if (candidates.length === 1) {
+          actor.name = candidates[0].Name;
+          assigned.add(candidates[0].Name);
+        }
+      }
+    }
+  }
+
   const allRawBoostValues = [...samplesByPri.values()]
     .flat()
     .map((sample) => sample.rawBoost);
@@ -595,7 +628,25 @@ async function main() {
       };
     });
 
-  const output = {
+  // Header-only fallback: no network actors.
+  if (players.length === 0 && headerPlayers.length > 0) {
+    const emptyBoostStats = calculateBoostStats([], [], matchStart, matchEnd, 100);
+    for (const player of headerPlayers) {
+      players.push({
+        playerName: player.Name,
+        team: player.Team ?? null,
+        score: player.Score ?? 0,
+        goals: player.Goals ?? 0,
+        assists: player.Assists ?? 0,
+        saves: player.Saves ?? 0,
+        shots: player.Shots ?? 0,
+        priActorId: null,
+        ...emptyBoostStats,
+      });
+    }
+  }
+
+  return {
     replayName: replay.properties?.ReplayName ?? null,
     replayId: replay.properties?.Id ?? null,
     mapName: replay.properties?.MapName ?? null,
@@ -607,12 +658,18 @@ async function main() {
     actorCounts,
     players,
   };
+}
+
+async function main() {
+  const replayBuffer = await fs.readFile(NETWORK_JSON_PATH);
+  const replay = readJsonFileSafe(replayBuffer);
+  const output = extractBoostStatsV2(replay);
 
   await fs.writeFile(OUTPUT_PATH, JSON.stringify(output, null, 2), "utf8");
 
   console.log("\nBoost stats V2:");
   console.table(
-    players.map((player) => ({
+    output.players.map((player) => ({
       Player: player.playerName,
       Team: player.team,
       Samples: player.sampleCount,
@@ -639,8 +696,10 @@ async function main() {
   console.log(`\nSaved boost stats to: ${OUTPUT_PATH}`);
 }
 
-main().catch((error) => {
-  console.error("Failed to extract boost stats V2:");
-  console.error(error);
-  process.exit(1);
-});
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  main().catch((error) => {
+    console.error("Failed to extract boost stats V2:");
+    console.error(error);
+    process.exit(1);
+  });
+}

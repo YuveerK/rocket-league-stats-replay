@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const ROOT_DIR = process.cwd();
 const NETWORK_JSON_PATH = path.join(ROOT_DIR, "output", "replay-network.json");
@@ -31,7 +32,7 @@ function readJsonFileSafe(buffer) {
     raw = buffer.toString("utf8");
   }
 
-  raw = raw.replace(/^\uFEFF/, "").trim();
+  raw = raw.replace(/^﻿/, "").trim();
   return JSON.parse(raw);
 }
 
@@ -170,10 +171,7 @@ function round(value, decimals = 2) {
   return Number(value.toFixed(decimals));
 }
 
-async function main() {
-  const replayBuffer = await fs.readFile(NETWORK_JSON_PATH);
-  const replay = readJsonFileSafe(replayBuffer);
-
+export function extractPlayerPositions(replay) {
   const frames = replay.network_frames?.frames ?? [];
   const objects = replay.objects ?? [];
   const names = replay.names ?? [];
@@ -453,7 +451,7 @@ async function main() {
     })
     .filter((player) => player.sampleCount > 0);
 
-  const output = {
+  return {
     replayName: replay.properties?.ReplayName ?? null,
     replayId: replay.properties?.Id ?? null,
     mapName: replay.properties?.MapName ?? null,
@@ -470,12 +468,18 @@ async function main() {
     playerCount: players.length,
     players,
   };
+}
+
+async function main() {
+  const replayBuffer = await fs.readFile(NETWORK_JSON_PATH);
+  const replay = readJsonFileSafe(replayBuffer);
+  const output = extractPlayerPositions(replay);
 
   await fs.writeFile(OUTPUT_PATH, JSON.stringify(output, null, 2), "utf8");
 
   console.log("\nPlayer position samples:");
   console.table(
-    players.map((player) => ({
+    output.players.map((player) => ({
       Player: player.playerName,
       Team: player.team,
       Samples: player.sampleCount,
@@ -485,8 +489,10 @@ async function main() {
   console.log(`\nSaved player position timeline to: ${OUTPUT_PATH}`);
 }
 
-main().catch((error) => {
-  console.error("Failed to extract player positions:");
-  console.error(error);
-  process.exit(1);
-});
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  main().catch((error) => {
+    console.error("Failed to extract player positions:");
+    console.error(error);
+    process.exit(1);
+  });
+}

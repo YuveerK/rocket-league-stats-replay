@@ -122,26 +122,17 @@ function matchPlayerData(p, playerId, replayId) {
   };
 }
 
-async function main() {
-  const artifacts = await readArtifacts();
-  const currentReplay = artifacts["current-replay.json"];
-  const finalStats = artifacts["final-player-stats.json"];
-  const timeline = artifacts["game-timeline.json"];
-  const boostPickupsData = artifacts["boost-pickup-stats-v2.json"];
-  const positionData = artifacts["player-position-timeline.json"];
-
+async function persist(replayPath, fileName, finalStats, timeline, boostPickupsData, positionData, artifacts) {
   if (!finalStats) {
-    throw new Error("final-player-stats.json not found - cannot persist to DB");
+    throw new Error("finalStats missing — cannot persist to DB");
   }
 
   const replayId =
     finalStats.replayId ??
-    currentReplay?.replayId ??
-    (currentReplay?.fileName ? path.basename(currentReplay.fileName, ".replay") : null);
+    (fileName ? path.basename(fileName, ".replay") : null);
 
   if (!replayId) throw new Error("replayId missing from analysis output");
 
-  const replayPath = currentReplay?.replayPath ?? null;
   const fileStats = await statOptional(replayPath);
   const analysisTimestamp = new Date();
 
@@ -194,7 +185,7 @@ async function main() {
   }
 
   const replayData = {
-    fileName: currentReplay?.fileName ?? `${replayId}.replay`,
+    fileName: fileName ?? `${replayId}.replay`,
     replayName: finalStats.replayName ?? null,
     mapName: finalStats.mapName ?? "",
     matchType: finalStats.matchType ?? null,
@@ -398,12 +389,54 @@ async function main() {
   );
 }
 
-main()
-  .then(async () => {
-    await prisma.$disconnect();
-  })
-  .catch(async (err) => {
-    console.error("persistToDb failed:", err.message);
-    await prisma.$disconnect();
-    process.exit(1);
-  });
+export async function persistToDb(ctx) {
+  const artifacts = {
+    "current-replay.json": { replayPath: ctx.replayPath, fileName: ctx.fileName },
+    "final-player-stats.json": ctx.finalStats,
+    "game-timeline.json": ctx.timeline,
+    "ball-stats.json": ctx.ballStats,
+    "ball-position-timeline.json": ctx.ballTimeline,
+    "boost-stats-v2.json": ctx.boostStats,
+    "boost-pickup-stats-v2.json": ctx.boostPickups,
+    "player-position-timeline.json": ctx.positions,
+    "player-mapping.json": ctx.playerMapping,
+    "advanced-player-stats.json": ctx.advancedStats,
+    "match-meta.json": ctx.matchMeta,
+  };
+
+  await persist(
+    ctx.replayPath,
+    ctx.fileName,
+    ctx.finalStats,
+    ctx.timeline,
+    ctx.boostPickups,
+    ctx.positions,
+    artifacts,
+  );
+}
+
+async function main() {
+  const artifacts = await readArtifacts();
+  const currentReplay = artifacts["current-replay.json"];
+  const finalStats = artifacts["final-player-stats.json"];
+  const timeline = artifacts["game-timeline.json"];
+  const boostPickupsData = artifacts["boost-pickup-stats-v2.json"];
+  const positionData = artifacts["player-position-timeline.json"];
+
+  const replayPath = currentReplay?.replayPath ?? null;
+  const fileName = currentReplay?.fileName ?? null;
+
+  await persist(replayPath, fileName, finalStats, timeline, boostPickupsData, positionData, artifacts);
+}
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  main()
+    .then(async () => {
+      await prisma.$disconnect();
+    })
+    .catch(async (err) => {
+      console.error("persistToDb failed:", err.message);
+      await prisma.$disconnect();
+      process.exit(1);
+    });
+}

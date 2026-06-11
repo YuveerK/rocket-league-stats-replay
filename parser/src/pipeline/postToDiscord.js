@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   getBooleanConfig,
   getConfigValue,
@@ -72,10 +73,8 @@ function getWinningColor(team0Score, team1Score) {
 
 function clampEmbedColor(value, fallback) {
   if (!value) return fallback;
-
   const normalized = value.startsWith("#") ? value.slice(1) : value;
   const parsed = Number.parseInt(normalized, 16);
-
   if (!Number.isFinite(parsed)) return fallback;
   return parsed;
 }
@@ -103,19 +102,13 @@ function buildCardEmbeds(cardManifest, embedColor) {
     title: CARD_TITLES[card.filename] ?? "📄  Replay Card",
     description: CARD_DESCRIPTIONS[card.filename] ?? null,
     color: embedColor,
-    image: {
-      url: `attachment://${card.filename}`,
-    },
+    image: { url: `attachment://${card.filename}` },
   }));
 }
 
 function buildTopPerformersEmbed(players) {
   if (!players.length) {
-    return {
-      title: "🏅  Top Performers",
-      description: "No players detected.",
-      color: GOLD_COLOR,
-    };
+    return { title: "🏅  Top Performers", description: "No players detected.", color: GOLD_COLOR };
   }
 
   const mvp = getTopPlayer(players, (player) => player.score);
@@ -127,38 +120,10 @@ function buildTopPerformersEmbed(players) {
     title: "🏅  Top Performers",
     color: GOLD_COLOR,
     fields: [
-      {
-        name: "🏆  MVP",
-        value: formatLeader(mvp, formatNumber(mvp?.score), " pts"),
-        inline: true,
-      },
-      {
-        name: "⚽  Striker",
-        value: formatLeader(
-          striker,
-          formatNumber(striker?.goals),
-          ` ${pluralize(striker?.goals, "goal")}`,
-        ),
-        inline: true,
-      },
-      {
-        name: "🛡️  Goalkeeper",
-        value: formatLeader(
-          goalkeeper,
-          formatNumber(goalkeeper?.saves),
-          ` ${pluralize(goalkeeper?.saves, "save")}`,
-        ),
-        inline: true,
-      },
-      {
-        name: "💥  Enforcer",
-        value: formatLeader(
-          enforcer,
-          formatNumber(enforcer?.kills),
-          ` ${pluralize(enforcer?.kills, "demo")}`,
-        ),
-        inline: true,
-      },
+      { name: "🏆  MVP", value: formatLeader(mvp, formatNumber(mvp?.score), " pts"), inline: true },
+      { name: "⚽  Striker", value: formatLeader(striker, formatNumber(striker?.goals), ` ${pluralize(striker?.goals, "goal")}`), inline: true },
+      { name: "🛡️  Goalkeeper", value: formatLeader(goalkeeper, formatNumber(goalkeeper?.saves), ` ${pluralize(goalkeeper?.saves, "save")}`), inline: true },
+      { name: "💥  Enforcer", value: formatLeader(enforcer, formatNumber(enforcer?.kills), ` ${pluralize(enforcer?.kills, "demo")}`), inline: true },
     ],
   };
 }
@@ -182,9 +147,7 @@ function formatTimelineEvent(event) {
   const time = event.gameClockRemaining ?? event.elapsedClock ?? "?:??";
 
   if (event.type === "goal") {
-    const score = event.scoreAfter
-      ? `  *(${event.scoreAfter.team0}–${event.scoreAfter.team1})*`
-      : "";
+    const score = event.scoreAfter ? `  *(${event.scoreAfter.team0}–${event.scoreAfter.team1})*` : "";
     return `\`${time}\`  ${emoji}  **${label}** — ${event.playerName}${score}`;
   }
 
@@ -220,8 +183,6 @@ function buildPayload(finalStats, timeline, cardManifest = null) {
     getWinningColor(team0Score, team1Score),
   );
 
-  const cardEmbeds = buildCardEmbeds(cardManifest, embedColor);
-
   return {
     username: getConfigValue("DISCORD_WEBHOOK_USERNAME", "Replay Stats"),
     content: finalStats.matchStartEpoch
@@ -229,37 +190,19 @@ function buildPayload(finalStats, timeline, cardManifest = null) {
       : "🏎️  New Rocket League replay analyzed!",
     allowed_mentions: { parse: [] },
     embeds: [
-      ...cardEmbeds,
+      ...buildCardEmbeds(cardManifest, embedColor),
       buildTopPerformersEmbed(players),
       buildTimelineEmbed(timeline?.events ?? []),
     ].slice(0, 10),
   };
 }
 
-async function readJson(filePath) {
-  return JSON.parse(await fs.readFile(filePath, "utf8"));
-}
-
-async function readJsonOptional(filePath) {
-  try {
-    return await readJson(filePath);
-  } catch (error) {
-    if (error.code === "ENOENT") return null;
-    throw error;
-  }
-}
-
 async function getCardFiles(cardManifest) {
   const files = [];
-
   for (const card of cardManifest?.cards ?? []) {
     const filePath = path.resolve(card.path);
-    files.push({
-      filename: card.filename,
-      data: await fs.readFile(filePath),
-    });
+    files.push({ filename: card.filename, data: await fs.readFile(filePath) });
   }
-
   return files;
 }
 
@@ -270,67 +213,80 @@ async function postWebhook(webhookUrl, payload, files = []) {
   if (files.length > 0) {
     body = new FormData();
     body.append("payload_json", JSON.stringify(payload));
-
     files.forEach((file, index) => {
-      body.append(
-        `files[${index}]`,
-        new Blob([file.data], { type: "image/png" }),
-        file.filename,
-      );
+      body.append(`files[${index}]`, new Blob([file.data], { type: "image/png" }), file.filename);
     });
   } else {
-    headers = {
-      "Content-Type": "application/json",
-    };
+    headers = { "Content-Type": "application/json" };
     body = JSON.stringify(payload);
   }
 
-  const response = await fetch(webhookUrl, {
-    method: "POST",
-    headers,
-    body,
-  });
+  const response = await fetch(webhookUrl, { method: "POST", headers, body });
 
   if (!response.ok) {
-    const body = await response.text();
-    throw new Error(`Discord webhook failed: ${response.status} ${body}`);
+    const responseBody = await response.text();
+    throw new Error(`Discord webhook failed: ${response.status} ${responseBody}`);
   }
 }
 
-async function main() {
+export async function postToDiscord({ finalStats, timeline, discordCards: cardManifest }) {
   loadEnv();
 
-  const dryRun =
-    process.argv.includes("--dry-run") || getBooleanConfig("DISCORD_DRY_RUN");
   const webhookUrl = getConfigValue("DISCORD_WEBHOOK_URL");
+  if (!webhookUrl) return;
 
-  const finalStats = await readJson(FINAL_STATS_PATH);
-  const timeline = await readJson(TIMELINE_PATH);
-  const cardManifest = await readJsonOptional(CARD_MANIFEST_PATH);
+  const dryRun = getBooleanConfig("DISCORD_DRY_RUN");
   const payload = buildPayload(finalStats, timeline, cardManifest);
   const files = await getCardFiles(cardManifest);
 
   if (dryRun) {
     console.log("Discord dry run payload:");
     console.log(JSON.stringify(payload, null, 2));
-    console.log(
-      `\nAttachments: ${files.length > 0 ? files.map((f) => f.filename).join(", ") : "none"}`,
-    );
+    console.log(`\nAttachments: ${files.length > 0 ? files.map((f) => f.filename).join(", ") : "none"}`);
     return;
-  }
-
-  if (!webhookUrl) {
-    throw new Error(
-      "DISCORD_WEBHOOK_URL is not set. Add it to .env or run with --dry-run.",
-    );
   }
 
   await postWebhook(webhookUrl, payload, files);
   console.log("Posted replay stats to Discord.");
 }
 
-main().catch((error) => {
-  console.error("Failed to post replay stats to Discord:");
-  console.error(error.message);
-  process.exit(1);
-});
+async function main() {
+  loadEnv();
+
+  const dryRun = process.argv.includes("--dry-run") || getBooleanConfig("DISCORD_DRY_RUN");
+  const webhookUrl = getConfigValue("DISCORD_WEBHOOK_URL");
+
+  const finalStats = JSON.parse(await fs.readFile(FINAL_STATS_PATH, "utf8"));
+  const timeline = JSON.parse(await fs.readFile(TIMELINE_PATH, "utf8"));
+  let cardManifest = null;
+  try {
+    cardManifest = JSON.parse(await fs.readFile(CARD_MANIFEST_PATH, "utf8"));
+  } catch (err) {
+    if (err.code !== "ENOENT") throw err;
+  }
+
+  const payload = buildPayload(finalStats, timeline, cardManifest);
+  const files = await getCardFiles(cardManifest);
+
+  if (dryRun) {
+    console.log("Discord dry run payload:");
+    console.log(JSON.stringify(payload, null, 2));
+    console.log(`\nAttachments: ${files.length > 0 ? files.map((f) => f.filename).join(", ") : "none"}`);
+    return;
+  }
+
+  if (!webhookUrl) {
+    throw new Error("DISCORD_WEBHOOK_URL is not set. Add it to .env or run with --dry-run.");
+  }
+
+  await postWebhook(webhookUrl, payload, files);
+  console.log("Posted replay stats to Discord.");
+}
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  main().catch((error) => {
+    console.error("Failed to post replay stats to Discord:");
+    console.error(error.message);
+    process.exit(1);
+  });
+}

@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import sharp from "sharp";
 import { ROOT_DIR } from "../utils/config.js";
 
@@ -184,14 +185,8 @@ function renderScoreboardSvg(finalStats) {
     return safeNumber(b.score) - safeNumber(a.score);
   });
   const headers = [
-    ["PLAYER", 90],
-    ["SCORE", 500],
-    ["G", 650],
-    ["A", 740],
-    ["SV", 830],
-    ["SH", 930],
-    ["DM", 1030],
-    ["BOOST", 1140],
+    ["PLAYER", 90], ["SCORE", 500], ["G", 650], ["A", 740],
+    ["SV", 830], ["SH", 930], ["DM", 1030], ["BOOST", 1140],
   ];
   const rowH = 74;
   const startY = 270;
@@ -254,7 +249,6 @@ function renderTeamComparisonSvg(finalStats) {
     ["Small Pads",      blue.smallPads,           orange.smallPads,           (v) => formatNumber(v)],
   ];
 
-  // One clipPath per row so the split bar stays inside the rounded background rect.
   const clipDefs = rows.map((_, i) => {
     const barY = START_Y + i * ROW_H + BAR_Y_OFFSET;
     return `<clipPath id="bar${i}"><rect x="${BAR_X}" y="${barY}" width="${BAR_W}" height="${BAR_H}" rx="5"/></clipPath>`;
@@ -312,29 +306,10 @@ function renderTeamComparisonSvg(finalStats) {
 async function writePng(filename, svg) {
   const outputPath = path.join(CARD_DIR, filename);
   await sharp(Buffer.from(svg)).png().toFile(outputPath);
-  return {
-    filename,
-    path: outputPath,
-  };
+  return { filename, path: outputPath };
 }
 
-async function readJson(filePath) {
-  return JSON.parse(await fs.readFile(filePath, "utf8"));
-}
-
-async function readJsonOptional(filePath) {
-  try {
-    return await readJson(filePath);
-  } catch (error) {
-    if (error.code === "ENOENT") return null;
-    throw error;
-  }
-}
-
-async function main() {
-  const finalStats = await readJson(FINAL_STATS_PATH);
-  const timeline = await readJsonOptional(TIMELINE_PATH);
-
+export async function renderDiscordCards(finalStats, timeline) {
   await fs.mkdir(CARD_DIR, { recursive: true });
 
   const cards = [
@@ -343,26 +318,36 @@ async function main() {
     await writePng("team-comparison.png", renderTeamComparisonSvg(finalStats, timeline)),
   ];
 
-  await fs.writeFile(
-    MANIFEST_PATH,
-    JSON.stringify(
-      {
-        generatedAt: new Date().toISOString(),
-        replayName: finalStats.replayName ?? null,
-        cards,
-      },
-      null,
-      2,
-    ),
-    "utf8",
-  );
+  const manifest = {
+    generatedAt: new Date().toISOString(),
+    replayName: finalStats.replayName ?? null,
+    cards,
+  };
 
-  console.log("\nDiscord cards generated:");
-  console.table(cards.map((card) => ({ File: card.filename, Path: card.path })));
+  await fs.writeFile(MANIFEST_PATH, JSON.stringify(manifest, null, 2), "utf8");
+
+  return manifest;
 }
 
-main().catch((error) => {
-  console.error("Failed to render Discord cards:");
-  console.error(error.message);
-  process.exit(1);
-});
+async function main() {
+  const finalStats = JSON.parse(await fs.readFile(FINAL_STATS_PATH, "utf8"));
+  let timeline = null;
+  try {
+    timeline = JSON.parse(await fs.readFile(TIMELINE_PATH, "utf8"));
+  } catch (err) {
+    if (err.code !== "ENOENT") throw err;
+  }
+
+  const manifest = await renderDiscordCards(finalStats, timeline);
+
+  console.log("\nDiscord cards generated:");
+  console.table(manifest.cards.map((card) => ({ File: card.filename, Path: card.path })));
+}
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  main().catch((error) => {
+    console.error("Failed to render Discord cards:");
+    console.error(error.message);
+    process.exit(1);
+  });
+}

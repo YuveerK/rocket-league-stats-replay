@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const ROOT_DIR = process.cwd();
 const NETWORK_JSON_PATH = path.join(ROOT_DIR, "output", "replay-network.json");
@@ -24,10 +25,7 @@ const COMPONENT_OBJECT_NAMES = new Set([
   "Archetypes.CarComponents.CarComponent_DoubleJump",
 ]);
 
-// Threshold for "supersonic" in UU/s (approximate — calibrate if needed).
-// Rocket League field is ~8192 UU wide and max car speed ≈ 2300 UU/s.
 const SUPERSONIC_THRESHOLD = 2200;
-// Car z when on the ground is ~17 UU (half car height). Values above this = airborne.
 const AERIAL_THRESHOLD = 25;
 
 function readJsonFileSafe(buffer) {
@@ -85,11 +83,7 @@ function findNumbers(value, result = []) {
 }
 
 function isTeamActorObject(name) {
-  return (
-    name === "Engine.TeamInfo" ||
-    name === "TAGame.Team_TA" ||
-    name.endsWith(".Team_TA")
-  );
+  return name === "Engine.TeamInfo" || name === "TAGame.Team_TA" || name.endsWith(".Team_TA");
 }
 
 function getActiveTeamActorId(numbers, activeActors) {
@@ -115,10 +109,7 @@ function ensureArray(map, key) {
   return map.get(key);
 }
 
-async function main() {
-  const buffer = await fs.readFile(NETWORK_JSON_PATH);
-  const replay = readJsonFileSafe(buffer);
-
+export function extractAdvancedPlayerStats(replay) {
   const frames = replay.network_frames?.frames ?? [];
   const objects = replay.objects ?? [];
   const names = replay.names ?? [];
@@ -131,25 +122,23 @@ async function main() {
   const cameraToPri = new Map();
   const teamActorToIndex = new Map();
 
-  const speedSamples = new Map();         // priActorId -> [{time, speed, z}]
-  const throttleSamples = new Map();      // priActorId -> [rawValue]
-  const brakeSamples = new Map();         // priActorId -> [boolean]
-  const cameraByPri = new Map();          // priActorId -> CamSettings object
-  const loadoutByPri = new Map();         // priActorId -> TeamLoadout object
-
-  // New tracking
-  const componentToCar = new Map();       // componentActorId -> carActorId
-  const pingSamples = new Map();          // priActorId -> [byte values]
-  const titleByPri = new Map();           // priActorId -> Int (opaque title ID)
-  const partyLeaderByPri = new Map();     // priActorId -> PartyLeader object
-  const totalGameTimeByPri = new Map();   // priActorId -> max Int seen
-  const netQualityByPri = new Map();      // priActorId -> max Byte seen
-  const onlineLoadoutByPri = new Map();   // priActorId -> LoadoutsOnline object
-  const dodgeRefreshByPri = new Map();    // priActorId -> max DodgesRefreshedCounter
-  const airActivateByPri = new Map();     // priActorId -> max AirActivateCount
-  const dodgeCountByPri = new Map();      // priActorId -> count of DodgeTorque updates
-  const doubleJumpByPri = new Map();      // priActorId -> count of DoubleJumpImpulse updates
-  const steerSamples = new Map();         // priActorId -> [byte values (0-255, 128=center)]
+  const speedSamples = new Map();
+  const throttleSamples = new Map();
+  const brakeSamples = new Map();
+  const cameraByPri = new Map();
+  const loadoutByPri = new Map();
+  const componentToCar = new Map();
+  const pingSamples = new Map();
+  const titleByPri = new Map();
+  const partyLeaderByPri = new Map();
+  const totalGameTimeByPri = new Map();
+  const netQualityByPri = new Map();
+  const onlineLoadoutByPri = new Map();
+  const dodgeRefreshByPri = new Map();
+  const airActivateByPri = new Map();
+  const dodgeCountByPri = new Map();
+  const doubleJumpByPri = new Map();
+  const steerSamples = new Map();
 
   const frameTimes = frames.map((f) => f.time).filter((t) => typeof t === "number");
   const matchStart = frameTimes.length ? Math.min(...frameTimes) : 0;
@@ -184,16 +173,13 @@ async function main() {
       const objectName = getObjectName(actor, objects, names);
       activeActors.set(actorId, { actorId, objectName });
       if (objectName === PRI_OBJECT_NAME) ensurePri(actorId);
-      // Components are linked to cars via TAGame.CarComponent_TA:Vehicle later
     }
 
     for (const update of frame.updated_actors ?? []) {
       const actorId = getActorId(update);
       if (actorId === null) continue;
-
       const activeActor = activeActors.get(actorId);
       if (!activeActor) continue;
-
       const activeObjectName = activeActor.objectName;
       const updateObjectName = getObjectName(update, objects, names);
       const attribute = update.attribute ?? {};
@@ -204,14 +190,12 @@ async function main() {
         if (idx !== undefined) teamActorToIndex.set(actorId, idx);
       }
 
-      // Link car component → car (covers Jump/Dodge/DoubleJump components)
       if (updateObjectName === "TAGame.CarComponent_TA:Vehicle") {
         const nums = findNumbers(attribute);
         const carRef = getActiveActorId(nums, activeActors, CAR_OBJECT_NAME);
         if (carRef !== undefined) componentToCar.set(actorId, carRef);
       }
 
-      // PRI: player name + team
       if (activeObjectName === PRI_OBJECT_NAME) {
         const info = ensurePri(actorId);
 
@@ -236,7 +220,6 @@ async function main() {
 
         if (updateObjectName === CLIENT_LOADOUT && attribute?.TeamLoadout) {
           const tl = attribute.TeamLoadout;
-          const info = priInfo.get(actorId);
           const raw = (info?.team === 1 ? tl.orange : tl.blue) ?? tl.blue ?? tl.orange;
           if (raw) {
             loadoutByPri.set(actorId, {
@@ -248,7 +231,6 @@ async function main() {
 
         if (updateObjectName === "Engine.PlayerReplicationInfo:Ping") {
           const raw = findNumbers(attribute)[0];
-          // UE3 compresses ping as floor(actualMs / 4); multiply back to get ms.
           if (typeof raw === "number") ensureArray(pingSamples, actorId).push(raw * 4);
         }
 
@@ -282,11 +264,7 @@ async function main() {
         }
       }
 
-      // CAR: link to PRI
-      if (
-        activeObjectName === CAR_OBJECT_NAME &&
-        updateObjectName === "Engine.Pawn:PlayerReplicationInfo"
-      ) {
+      if (activeObjectName === CAR_OBJECT_NAME && updateObjectName === "Engine.Pawn:PlayerReplicationInfo") {
         const nums = findNumbers(attribute);
         const priRef = getActiveActorId(nums, activeActors, PRI_OBJECT_NAME);
         if (priRef !== undefined) {
@@ -295,7 +273,6 @@ async function main() {
         }
       }
 
-      // CAR: physics → speed + altitude
       if (activeObjectName === CAR_OBJECT_NAME && updateObjectName === RIGID_BODY_STATE) {
         const priId = carToPri.get(actorId);
         if (priId !== undefined) {
@@ -303,14 +280,11 @@ async function main() {
           if (rb) {
             const speed = velocityMagnitude(rb.linear_velocity);
             const z = rb.location?.z ?? 0;
-            if (speed !== null) {
-              ensureArray(speedSamples, priId).push({ time, speed, z });
-            }
+            if (speed !== null) ensureArray(speedSamples, priId).push({ time, speed, z });
           }
         }
       }
 
-      // CAR: throttle input
       if (activeObjectName === CAR_OBJECT_NAME && THROTTLE_NAMES.has(updateObjectName)) {
         const priId = carToPri.get(actorId);
         if (priId !== undefined) {
@@ -322,12 +296,10 @@ async function main() {
       if (activeObjectName === CAR_OBJECT_NAME && updateObjectName === HANDBRAKE) {
         const priId = carToPri.get(actorId);
         if (priId !== undefined) {
-          const isHandbrake = attribute?.Boolean === true;
-          ensureArray(brakeSamples, priId).push(isHandbrake);
+          ensureArray(brakeSamples, priId).push(attribute?.Boolean === true);
         }
       }
 
-      // CAR: dodge refreshes (wall/ceiling touches that reset dodge)
       if (activeObjectName === CAR_OBJECT_NAME && updateObjectName === "TAGame.Car_TA:DodgesRefreshedCounter") {
         const priId = carToPri.get(actorId);
         if (priId !== undefined) {
@@ -338,7 +310,6 @@ async function main() {
         }
       }
 
-      // CAR: steering input
       if (activeObjectName === CAR_OBJECT_NAME && updateObjectName === "TAGame.Vehicle_TA:ReplicatedSteer") {
         const priId = carToPri.get(actorId);
         if (priId !== undefined) {
@@ -347,7 +318,6 @@ async function main() {
         }
       }
 
-      // COMPONENT: air rolls (Jump component carries AirActivateCount)
       if (updateObjectName === "TAGame.CarComponent_AirActivate_TA:AirActivateCount") {
         const carId = componentToCar.get(actorId);
         if (carId !== undefined) {
@@ -361,7 +331,6 @@ async function main() {
         }
       }
 
-      // COMPONENT: dodge count (each DodgeTorque update = one dodge executed)
       if (updateObjectName === "TAGame.CarComponent_Dodge_TA:DodgeTorque") {
         const carId = componentToCar.get(actorId);
         if (carId !== undefined) {
@@ -372,7 +341,6 @@ async function main() {
         }
       }
 
-      // COMPONENT: double jumps
       if (updateObjectName === "TAGame.CarComponent_DoubleJump_TA:DoubleJumpImpulse") {
         const carId = componentToCar.get(actorId);
         if (carId !== undefined) {
@@ -383,7 +351,6 @@ async function main() {
         }
       }
 
-      // Camera → PRI link
       if (updateObjectName === CAMERA_PRI_LINK) {
         const priActorRef =
           attribute?.ActiveActor?.actor_id ??
@@ -391,7 +358,6 @@ async function main() {
         if (priActorRef !== undefined) cameraToPri.set(actorId, priActorRef);
       }
 
-      // Camera settings
       if (updateObjectName === CAMERA_SETTINGS) {
         const priId = cameraToPri.get(actorId);
         if (priId !== undefined && attribute?.CamSettings) {
@@ -403,7 +369,6 @@ async function main() {
     for (const deleted of frame.deleted_actors ?? []) {
       const deletedId = typeof deleted === "number" ? deleted : getActorId(deleted);
       if (deletedId === null || deletedId === undefined) continue;
-
       const actor = activeActors.get(deletedId);
       if (actor?.objectName === CAR_OBJECT_NAME) {
         carToPri.delete(deletedId);
@@ -428,7 +393,6 @@ async function main() {
     const platform = Object.keys(remote)[0];
     const id = remote[platform];
     if (id == null) return null;
-    // remote_id values can be a plain string/number (Epic) or a nested object (PS4/Xbox).
     const idStr = typeof id === "object"
       ? (Object.values(id)[0] ?? JSON.stringify(id))
       : String(id);
@@ -467,33 +431,28 @@ async function main() {
 
       let supersonicSeconds = 0;
       let airborneSeconds = 0;
-
       for (let i = 0; i < samples.length - 1; i++) {
         const dt = samples[i + 1].time - samples[i].time;
-        if (dt <= 0 || dt > 1) continue; // skip gaps (goals, etc.)
+        if (dt <= 0 || dt > 1) continue;
         if (samples[i].speed >= SUPERSONIC_THRESHOLD) supersonicSeconds += dt;
         if (samples[i].z >= AERIAL_THRESHOLD) airborneSeconds += dt;
       }
 
       const rawThrottleMax = throttles.length ? Math.max(...throttles) : 1;
       const normFactor = rawThrottleMax > 1 ? rawThrottleMax : 1;
-      const avgThrottle =
-        throttles.length
-          ? round(throttles.reduce((a, b) => a + b, 0) / throttles.length / normFactor, 3)
-          : null;
+      const avgThrottle = throttles.length
+        ? round(throttles.reduce((a, b) => a + b, 0) / throttles.length / normFactor, 3)
+        : null;
 
-      const handbrakeUsagePct =
-        brakes.length
-          ? round((brakes.filter(Boolean).length / brakes.length) * 100, 1)
-          : null;
+      const handbrakeUsagePct = brakes.length
+        ? round((brakes.filter(Boolean).length / brakes.length) * 100, 1)
+        : null;
 
       const cam = cameraByPri.get(priActorId);
       const loadoutRaw = loadoutByPri.get(priActorId);
-
       const pings = pingSamples.get(priActorId) ?? [];
       const avgPing = pings.length ? round(pings.reduce((a, b) => a + b, 0) / pings.length, 1) : null;
       const maxPing = pings.length ? Math.max(...pings) : null;
-
       const steers = steerSamples.get(priActorId) ?? [];
       const avgSteerDeviation = steers.length
         ? round(steers.reduce((sum, s) => sum + Math.abs(s - 128), 0) / steers.length / 128 * 100, 1)
@@ -501,7 +460,7 @@ async function main() {
 
       const partyLeader = partyLeaderByPri.get(priActorId) ?? null;
       const onlineLoadoutRaw = onlineLoadoutByPri.get(priActorId) ?? null;
-      const { playerName: resolvedName, team: resolvedTeam } = resolvePlayer(priActorId);
+      const { team: resolvedTeam } = resolvePlayer(priActorId);
 
       return {
         playerName,
@@ -526,31 +485,16 @@ async function main() {
         doubleJumps: doubleJumpByPri.get(priActorId) ?? null,
         avgSteerDeviation,
         camera: cam
-          ? {
-              fov: cam.fov ?? null,
-              height: cam.height ?? null,
-              angle: cam.angle ?? null,
-              distance: cam.distance ?? null,
-              stiffness: cam.stiffness ?? null,
-              swivel: cam.swivel ?? null,
-            }
+          ? { fov: cam.fov ?? null, height: cam.height ?? null, angle: cam.angle ?? null, distance: cam.distance ?? null, stiffness: cam.stiffness ?? null, swivel: cam.swivel ?? null }
           : null,
         loadout: loadoutRaw
-          ? {
-              body: loadoutRaw.body ?? null,
-              decal: loadoutRaw.decal ?? null,
-              wheels: loadoutRaw.wheels ?? null,
-              rocketTrail: loadoutRaw.rocket_trail ?? null,
-              antenna: loadoutRaw.antenna ?? null,
-              topper: loadoutRaw.topper ?? null,
-              goalExplosion: loadoutRaw.goal_explosion ?? null,
-            }
+          ? { body: loadoutRaw.body ?? null, decal: loadoutRaw.decal ?? null, wheels: loadoutRaw.wheels ?? null, rocketTrail: loadoutRaw.rocket_trail ?? null, antenna: loadoutRaw.antenna ?? null, topper: loadoutRaw.topper ?? null, goalExplosion: loadoutRaw.goal_explosion ?? null }
           : null,
         onlineLoadout: parseOnlineLoadout(onlineLoadoutRaw, resolvedTeam),
       };
     });
 
-  const output = {
+  return {
     replayName: replay.properties?.ReplayName ?? null,
     notes: [
       `Supersonic threshold: ${SUPERSONIC_THRESHOLD} UU/s (approximate — calibrate against known clips if needed).`,
@@ -571,12 +515,18 @@ async function main() {
     ],
     players,
   };
+}
+
+async function main() {
+  const buffer = await fs.readFile(NETWORK_JSON_PATH);
+  const replay = readJsonFileSafe(buffer);
+  const output = extractAdvancedPlayerStats(replay);
 
   await fs.writeFile(OUTPUT_PATH, JSON.stringify(output, null, 2), "utf8");
 
   console.log("\nAdvanced player stats:");
   console.table(
-    players.map((p) => ({
+    output.players.map((p) => ({
       Player: p.playerName,
       Team: p.team,
       "Max Speed": p.maxSpeedUU,
@@ -594,8 +544,10 @@ async function main() {
   console.log(`\nSaved advanced player stats to: ${OUTPUT_PATH}`);
 }
 
-main().catch((error) => {
-  console.error("Failed to extract advanced player stats:");
-  console.error(error);
-  process.exit(1);
-});
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  main().catch((error) => {
+    console.error("Failed to extract advanced player stats:");
+    console.error(error);
+    process.exit(1);
+  });
+}

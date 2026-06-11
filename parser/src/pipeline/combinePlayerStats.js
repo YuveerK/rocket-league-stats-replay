@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const ROOT_DIR = process.cwd();
 
@@ -16,28 +17,12 @@ function shootingPercentage(goals, shots) {
   return Number(((goals / shots) * 100).toFixed(2));
 }
 
-async function readJsonOptional(filePath) {
-  try {
-    return JSON.parse(await fs.readFile(filePath, "utf8"));
-  } catch (error) {
-    if (error.code === "ENOENT") return null;
-    throw error;
-  }
-}
-
-async function main() {
-  const boostStats = JSON.parse(await fs.readFile(BOOST_STATS_PATH, "utf8"));
-  const pickupStats = JSON.parse(await fs.readFile(PICKUP_STATS_PATH, "utf8"));
-  const timelineStats = await readJsonOptional(TIMELINE_PATH);
-  const ballStats = await readJsonOptional(BALL_STATS_PATH);
-  const advancedStats = await readJsonOptional(ADVANCED_STATS_PATH);
-  const matchMeta = await readJsonOptional(MATCH_META_PATH);
-
+export function combinePlayerStats({ boostStats, boostPickups, timeline, ballStats, advancedStats, matchMeta }) {
   const pickupByPlayer = new Map(
-    pickupStats.players.map((player) => [player.playerName, player]),
+    (boostPickups?.players ?? []).map((player) => [player.playerName, player]),
   );
   const timelineByPlayer = new Map(
-    (timelineStats?.players ?? []).map((player) => [player.playerName, player]),
+    (timeline?.players ?? []).map((player) => [player.playerName, player]),
   );
   const advancedByPlayer = new Map(
     (advancedStats?.players ?? []).map((player) => [player.playerName, player]),
@@ -46,9 +31,9 @@ async function main() {
     (matchMeta?.players ?? []).map((p) => [p.name, p]),
   );
 
-  const players = boostStats.players.map((player) => {
+  const players = (boostStats?.players ?? []).map((player) => {
     const pickup = pickupByPlayer.get(player.playerName);
-    const timeline = timelineByPlayer.get(player.playerName);
+    const timelinePlayer = timelineByPlayer.get(player.playerName);
     const advanced = advancedByPlayer.get(player.playerName);
     const meta = metaPlayersByName.get(player.playerName);
 
@@ -65,8 +50,8 @@ async function main() {
       assists: player.assists,
       saves: player.saves,
       shootingPercentage: shootingPercentage(player.goals, player.shots),
-      kills: timeline?.kills ?? 0,
-      deaths: timeline?.deaths ?? 0,
+      kills: timelinePlayer?.kills ?? 0,
+      deaths: timelinePlayer?.deaths ?? 0,
 
       boostUsed: player.boostUsed,
       bpm: player.bpm,
@@ -111,10 +96,10 @@ async function main() {
     };
   });
 
-  const output = {
-    replayName: boostStats.replayName,
-    replayId: boostStats.replayId,
-    mapName: boostStats.mapName,
+  return {
+    replayName: boostStats?.replayName ?? null,
+    replayId: boostStats?.replayId ?? null,
+    mapName: boostStats?.mapName ?? null,
     overtime: matchMeta?.overtime ?? false,
     forfeit: matchMeta?.forfeit ?? false,
     totalSecondsPlayed: matchMeta?.totalSecondsPlayed ?? null,
@@ -148,24 +133,40 @@ async function main() {
     ],
     players,
   };
+}
+
+async function readJsonOptional(filePath) {
+  try {
+    return JSON.parse(await fs.readFile(filePath, "utf8"));
+  } catch (error) {
+    if (error.code === "ENOENT") return null;
+    throw error;
+  }
+}
+
+async function main() {
+  const boostStats = JSON.parse(await fs.readFile(BOOST_STATS_PATH, "utf8"));
+  const boostPickups = JSON.parse(await fs.readFile(PICKUP_STATS_PATH, "utf8"));
+  const timeline = await readJsonOptional(TIMELINE_PATH);
+  const ballStats = await readJsonOptional(BALL_STATS_PATH);
+  const advancedStats = await readJsonOptional(ADVANCED_STATS_PATH);
+  const matchMeta = await readJsonOptional(MATCH_META_PATH);
+
+  const output = combinePlayerStats({ boostStats, boostPickups, timeline, ballStats, advancedStats, matchMeta });
 
   await fs.writeFile(OUTPUT_PATH, JSON.stringify(output, null, 2), "utf8");
 
   console.log(`\nOvertime: ${output.overtime} | Forfeit: ${output.forfeit}`);
   if (output.possession) {
-    console.log(
-      `Ball possession: Team 0 ${output.possession.team0Pct}% | Team 1 ${output.possession.team1Pct}%`,
-    );
+    console.log(`Ball possession: Team 0 ${output.possession.team0Pct}% | Team 1 ${output.possession.team1Pct}%`);
   }
   if (output.statMilestones.length > 0) {
-    console.log(
-      `Milestones: ${output.statMilestones.map((m) => `${m.playerName}: ${m.milestone}`).join(", ")}`,
-    );
+    console.log(`Milestones: ${output.statMilestones.map((m) => `${m.playerName}: ${m.milestone}`).join(", ")}`);
   }
 
   console.log("\nFinal per-player stats:");
   console.table(
-    players.map((player) => ({
+    output.players.map((player) => ({
       Player: player.playerName,
       Team: player.team,
       Score: player.score,
@@ -188,8 +189,10 @@ async function main() {
   console.log(`\nSaved final stats to: ${OUTPUT_PATH}`);
 }
 
-main().catch((error) => {
-  console.error("Failed to combine player stats:");
-  console.error(error);
-  process.exit(1);
-});
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  main().catch((error) => {
+    console.error("Failed to combine player stats:");
+    console.error(error);
+    process.exit(1);
+  });
+}

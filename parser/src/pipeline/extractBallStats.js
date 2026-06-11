@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const ROOT_DIR = process.cwd();
 const NETWORK_JSON_PATH = path.join(ROOT_DIR, "output", "replay-network.json");
@@ -65,12 +66,7 @@ function velocityMagnitude(v) {
 }
 
 function hasVector3(value) {
-  return (
-    value &&
-    typeof value.x === "number" &&
-    typeof value.y === "number" &&
-    typeof value.z === "number"
-  );
+  return value && typeof value.x === "number" && typeof value.y === "number" && typeof value.z === "number";
 }
 
 function hasQuaternion(value) {
@@ -82,10 +78,7 @@ function round(value, decimals = 2) {
   return Number(value.toFixed(decimals));
 }
 
-async function main() {
-  const buffer = await fs.readFile(NETWORK_JSON_PATH);
-  const replay = readJsonFileSafe(buffer);
-
+export function extractBallStats(replay) {
   const frames = replay.network_frames?.frames ?? [];
   const objects = replay.objects ?? [];
   const names = replay.names ?? [];
@@ -122,7 +115,6 @@ async function main() {
     for (const update of frame.updated_actors ?? []) {
       const actorId = getActorId(update);
       if (actorId === null) continue;
-
       const updateObjectName = getObjectName(update, objects, names);
       const attribute = update.attribute ?? {};
 
@@ -130,13 +122,11 @@ async function main() {
         ballActorIds.add(actorId);
         const nums = findNumbers(attribute);
         const hitTeam = nums.find((n) => n === 0 || n === 1);
-
         if (hitTeam !== undefined && hitTeam !== currentHitTeam) {
           if (currentHitTeam !== null && lastHitTeamChangeTime !== null) {
             possessionSeconds[currentHitTeam] += time - lastHitTeamChangeTime;
           }
           currentHitTeam = hitTeam;
-          // On first touch count possession from match start; subsequent touches from current time.
           lastHitTeamChangeTime = lastHitTeamChangeTime === null ? (firstFrameTime ?? time) : time;
         }
       }
@@ -147,11 +137,7 @@ async function main() {
           const speed = velocityMagnitude(rb.linear_velocity);
           if (speed !== null) speedSamples.push(speed);
           if (typeof rb.location?.z === "number") heightSamples.push(rb.location.z);
-          if (
-            typeof rb.location?.x === "number" &&
-            typeof rb.location?.y === "number" &&
-            typeof rb.location?.z === "number"
-          ) {
+          if (typeof rb.location?.x === "number" && typeof rb.location?.y === "number" && typeof rb.location?.z === "number") {
             const sample = {
               frameIndex,
               time: round(time, 3),
@@ -162,20 +148,17 @@ async function main() {
               speedUU: speed !== null ? round(speed, 1) : null,
               lastTouchTeam: currentHitTeam,
             };
-
             if (hasQuaternion(rb.rotation)) {
               sample.qx = round(rb.rotation.x, 6);
               sample.qy = round(rb.rotation.y, 6);
               sample.qz = round(rb.rotation.z, 6);
               sample.qw = round(rb.rotation.w, 6);
             }
-
             if (hasVector3(rb.linear_velocity)) {
               sample.vx = round(rb.linear_velocity.x);
               sample.vy = round(rb.linear_velocity.y);
               sample.vz = round(rb.linear_velocity.z);
             }
-
             ballSamples.push(sample);
           }
         }
@@ -197,15 +180,14 @@ async function main() {
 
   const totalPossession = possessionSeconds[0] + possessionSeconds[1];
   const maxSpeed = speedSamples.length ? Math.max(...speedSamples) : 0;
-  const avgSpeed = speedSamples.length
-    ? speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length
-    : 0;
-
+  const avgSpeed = speedSamples.length ? speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length : 0;
   const AERIAL_THRESHOLD_UU = 100;
   const aerialCount = heightSamples.filter((z) => z > AERIAL_THRESHOLD_UU).length;
 
-  const output = {
-    replayName: replay.properties?.ReplayName ?? null,
+  const replayName = replay.properties?.ReplayName ?? null;
+
+  const ballStats = {
+    replayName,
     notes: [
       "Possession derived from TAGame.Ball_TA:HitTeamNum transitions over time.",
       "Ball speed is the magnitude of linear_velocity from ReplicatedRBState in UU/s.",
@@ -214,14 +196,8 @@ async function main() {
     possession: {
       team0Seconds: round(possessionSeconds[0]),
       team1Seconds: round(possessionSeconds[1]),
-      team0Pct:
-        totalPossession > 0
-          ? round((possessionSeconds[0] / totalPossession) * 100, 1)
-          : 50,
-      team1Pct:
-        totalPossession > 0
-          ? round((possessionSeconds[1] / totalPossession) * 100, 1)
-          : 50,
+      team0Pct: totalPossession > 0 ? round((possessionSeconds[0] / totalPossession) * 100, 1) : 50,
+      team1Pct: totalPossession > 0 ? round((possessionSeconds[1] / totalPossession) * 100, 1) : 50,
     },
     ballSpeed: {
       maxSpeedUU: round(maxSpeed, 1),
@@ -231,56 +207,48 @@ async function main() {
     ballAerial: {
       aerialSamples: aerialCount,
       totalSamples: heightSamples.length,
-      aerialPct:
-        heightSamples.length
-          ? round((aerialCount / heightSamples.length) * 100, 1)
-          : 0,
+      aerialPct: heightSamples.length ? round((aerialCount / heightSamples.length) * 100, 1) : 0,
     },
   };
 
-  await fs.writeFile(OUTPUT_PATH, JSON.stringify(output, null, 2), "utf8");
-  await fs.writeFile(
-    TIMELINE_OUTPUT_PATH,
-    JSON.stringify({
-      replayName: output.replayName,
-      sampleCount: ballSamples.length,
-      fieldBounds: {
-        minX: -4096,
-        maxX: 4096,
-        minY: -5120,
-        maxY: 5120,
-      },
-      notes: [
-        "Ball positions are extracted from ball ReplicatedRBState updates.",
-        "elapsedSeconds is relative to the first network frame.",
-        "lastTouchTeam is derived from the latest TAGame.Ball_TA:HitTeamNum update when available.",
-      ],
-      samples: ballSamples,
-    }, null, 2),
-    "utf8",
-  );
+  const ballTimeline = {
+    replayName,
+    sampleCount: ballSamples.length,
+    fieldBounds: { minX: -4096, maxX: 4096, minY: -5120, maxY: 5120 },
+    notes: [
+      "Ball positions are extracted from ball ReplicatedRBState updates.",
+      "elapsedSeconds is relative to the first network frame.",
+      "lastTouchTeam is derived from the latest TAGame.Ball_TA:HitTeamNum update when available.",
+    ],
+    samples: ballSamples,
+  };
+
+  return { ballStats, ballTimeline };
+}
+
+async function main() {
+  const buffer = await fs.readFile(NETWORK_JSON_PATH);
+  const replay = readJsonFileSafe(buffer);
+  const { ballStats, ballTimeline } = extractBallStats(replay);
+
+  await fs.writeFile(OUTPUT_PATH, JSON.stringify(ballStats, null, 2), "utf8");
+  await fs.writeFile(TIMELINE_OUTPUT_PATH, JSON.stringify(ballTimeline, null, 2), "utf8");
 
   console.log("\nBall possession:");
   console.table({
-    "Team 0": {
-      Seconds: output.possession.team0Seconds,
-      "%": `${output.possession.team0Pct}%`,
-    },
-    "Team 1": {
-      Seconds: output.possession.team1Seconds,
-      "%": `${output.possession.team1Pct}%`,
-    },
+    "Team 0": { Seconds: ballStats.possession.team0Seconds, "%": `${ballStats.possession.team0Pct}%` },
+    "Team 1": { Seconds: ballStats.possession.team1Seconds, "%": `${ballStats.possession.team1Pct}%` },
   });
-  console.log(
-    `Ball speed: max=${output.ballSpeed.maxSpeedUU} avg=${output.ballSpeed.avgSpeedUU} UU/s`,
-  );
-  console.log(`Ball aerial: ${output.ballAerial.aerialPct}% of samples`);
+  console.log(`Ball speed: max=${ballStats.ballSpeed.maxSpeedUU} avg=${ballStats.ballSpeed.avgSpeedUU} UU/s`);
+  console.log(`Ball aerial: ${ballStats.ballAerial.aerialPct}% of samples`);
   console.log(`\nSaved ball stats to: ${OUTPUT_PATH}`);
   console.log(`Saved ball timeline to: ${TIMELINE_OUTPUT_PATH}`);
 }
 
-main().catch((error) => {
-  console.error("Failed to extract ball stats:");
-  console.error(error);
-  process.exit(1);
-});
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  main().catch((error) => {
+    console.error("Failed to extract ball stats:");
+    console.error(error);
+    process.exit(1);
+  });
+}

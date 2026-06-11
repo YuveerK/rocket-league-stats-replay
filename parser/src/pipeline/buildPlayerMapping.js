@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const ROOT_DIR = process.cwd();
 const NETWORK_JSON_PATH = path.join(ROOT_DIR, "output", "replay-network.json");
@@ -14,7 +15,7 @@ function readJsonFileSafe(buffer) {
     raw = buffer.toString("utf8");
   }
 
-  raw = raw.replace(/^\uFEFF/, "").trim();
+  raw = raw.replace(/^﻿/, "").trim();
   return JSON.parse(raw);
 }
 
@@ -131,10 +132,7 @@ function ensureSet(map, key) {
   return map.get(key);
 }
 
-async function main() {
-  const buffer = await fs.readFile(NETWORK_JSON_PATH);
-  const replay = readJsonFileSafe(buffer);
-
+export function buildPlayerMapping(replay) {
   const frames = replay.network_frames?.frames ?? [];
   const objects = replay.objects ?? [];
   const names = replay.names ?? [];
@@ -337,7 +335,75 @@ async function main() {
     }
   }
 
+  // Reconcile censored network actors with unmatched header players by elimination.
+  {
+    const matchedHeaderNames = new Set(
+      [...priInfo.values()]
+        .map((i) => i.name)
+        .filter((n) => n !== null && headerPlayersByName.has(n)),
+    );
+    const unmatchedHeaderPlayers = headerPlayers.filter(
+      (p) => !matchedHeaderNames.has(p.Name),
+    );
+    const censoredActors = [...priInfo.values()].filter(
+      (i) => i.name !== null && !headerPlayersByName.has(i.name),
+    );
+
+    if (unmatchedHeaderPlayers.length === 1 && censoredActors.length === 1) {
+      censoredActors[0].name = unmatchedHeaderPlayers[0].Name;
+    } else if (unmatchedHeaderPlayers.length > 1 && censoredActors.length > 0) {
+      const assigned = new Set();
+      for (const actor of censoredActors) {
+        const actorTeam =
+          actor.teamFromNetwork ??
+          (actor.teamActorId !== null
+            ? (teamActorToIndex.get(actor.teamActorId) ?? null)
+            : null);
+        if (actorTeam === null) continue;
+        const candidates = unmatchedHeaderPlayers.filter(
+          (p) => p.Team === actorTeam && !assigned.has(p.Name),
+        );
+        if (candidates.length === 1) {
+          actor.name = candidates[0].Name;
+          assigned.add(candidates[0].Name);
+        }
+      }
+    }
+  }
+
   const rows = [];
+
+  // Header-only fallback: no network actors were present.
+  if (priInfo.size === 0 && headerPlayers.length > 0) {
+    for (const player of headerPlayers) {
+      const platformRaw = player.Platform ?? player.PlayerID?.Platform;
+      const platform = (() => {
+        if (!platformRaw) return null;
+        const raw =
+          typeof platformRaw === "object"
+            ? (platformRaw.value ?? platformRaw.kind ?? Object.values(platformRaw)[0])
+            : String(platformRaw);
+        return typeof raw === "string" ? raw.replace(/^OnlinePlatform_/, "") : null;
+      })();
+
+      rows.push({
+        playerName: player.Name,
+        team: player.Team ?? null,
+        platform,
+        score: player.Score ?? null,
+        goals: player.Goals ?? null,
+        assists: player.Assists ?? null,
+        saves: player.Saves ?? null,
+        shots: player.Shots ?? null,
+        priActorId: null,
+        carActorId: null,
+        boostActorId: null,
+        carActorIds: [],
+        boostActorIds: [],
+        mappingSource: "header-only",
+      });
+    }
+  }
 
   for (const priId of [...priInfo.keys()].sort((a, b) => a - b)) {
     const info = priInfo.get(priId);
@@ -355,8 +421,6 @@ async function main() {
         ? (teamActorToIndex.get(info.teamActorId) ?? null)
         : null);
 
-    // rrrocket puts Platform at top-level of each PlayerStats entry
-    // as {kind: "OnlinePlatform", value: "OnlinePlatform_Epic"}
     const platformRaw = header?.Platform ?? header?.PlayerID?.Platform;
     const platform = (() => {
       if (!platformRaw) return null;
@@ -384,7 +448,7 @@ async function main() {
     });
   }
 
-  const result = {
+  return {
     replayName: replay.properties?.ReplayName ?? null,
     replayId: replay.properties?.Id ?? null,
     mapName: replay.properties?.MapName ?? null,
@@ -392,6 +456,12 @@ async function main() {
     actorCounts,
     players: rows,
   };
+}
+
+async function main() {
+  const buffer = await fs.readFile(NETWORK_JSON_PATH);
+  const replay = readJsonFileSafe(buffer);
+  const result = buildPlayerMapping(replay);
 
   await fs.writeFile(OUTPUT_PATH, JSON.stringify(result, null, 2), "utf8");
 
@@ -400,7 +470,7 @@ async function main() {
 
   console.log("\nPlayer mapping:");
   console.table(
-    rows.map((row) => ({
+    result.players.map((row) => ({
       Player: row.playerName,
       Team: row.team,
       Score: row.score,
@@ -416,8 +486,10 @@ async function main() {
   console.log(`\nSaved mapping to: ${OUTPUT_PATH}`);
 }
 
-main().catch((error) => {
-  console.error("Failed to build player mapping:");
-  console.error(error);
-  process.exit(1);
-});
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  main().catch((error) => {
+    console.error("Failed to build player mapping:");
+    console.error(error);
+    process.exit(1);
+  });
+}
