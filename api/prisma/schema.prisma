@@ -2,6 +2,11 @@ generator client {
   provider = "prisma-client-js"
 }
 
+generator parserClient {
+  provider = "prisma-client-js"
+  output   = "../../parser/node_modules/.prisma/client"
+}
+
 datasource db {
   provider = "postgresql"
 }
