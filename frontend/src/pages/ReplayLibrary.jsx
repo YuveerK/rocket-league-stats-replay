@@ -1,8 +1,10 @@
 import AnalysisProgress from "@/components/AnalysisProgress";
+import { AggregatedStatsPanel } from "@/features/replay-library/components/AggregatedStatsPanel";
 import { ReplayFilters } from "@/features/replay-library/components/ReplayFilters";
 import { ReplayLibraryHeader } from "@/features/replay-library/components/ReplayLibraryHeader";
 import { ReplayListSection } from "@/features/replay-library/components/ReplayListSection";
 import { SelectedReplay } from "@/features/replay-library/components/SelectedReplay";
+import { useAggregatedStats } from "@/features/replay-library/hooks/useAggregatedStats";
 import { useReplayLibrary } from "@/features/replay-library/hooks/useReplayLibrary";
 
 export default function ReplayLibrary() {
@@ -31,6 +33,8 @@ export default function ReplayLibrary() {
     handleAnalysisComplete,
     setSelectedId,
   } = useReplayLibrary();
+
+  const aggregated = useAggregatedStats({ dateFrom, dateTo, filteredReplays });
 
   return (
     <div className="anim-fade-in">
@@ -72,6 +76,23 @@ export default function ReplayLibrary() {
             totalCount={replays.length}
             filteredCount={filteredReplays.length}
           />
+
+          <AggregatedStatsPanel
+            data={aggregated.data}
+            loading={aggregated.loading}
+            error={aggregated.error}
+            expanded={aggregated.expanded}
+            setExpanded={aggregated.setExpanded}
+            selectedPlayers={aggregated.selectedPlayers}
+            togglePlayer={aggregated.togglePlayer}
+            selectAll={aggregated.selectAll}
+            selectNone={aggregated.selectNone}
+            viewMode={aggregated.viewMode}
+            setViewMode={aggregated.setViewMode}
+            dateActive={aggregated.dateActive}
+            analyzedCount={aggregated.analyzedCount}
+          />
+
           <ReplayListSection
             loading={loading}
             error={error}
