@@ -1,11 +1,13 @@
 import "dotenv/config";
-import { spawn } from "node:child_process";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { constants as fsConstants } from "node:fs";
 import { prisma } from "../../lib/prisma.js";
-import { BACKEND_DIR, REPLAY_LIBRARY_DIR, REPLAYS_DIR } from "../config/paths.js";
+import { REPLAY_LIBRARY_DIR, REPLAYS_DIR } from "../config/paths.js";
 import { parseReplayHeader } from "../repositories/replay.repository.js";
+import { runPipeline } from "./analyzeReplay.js";
+
+const DEFAULT_CONCURRENCY = 3;
 
 function parseArgs(argv) {
   const args = {
@@ -15,6 +17,7 @@ function parseArgs(argv) {
     truncate: false,
     sourceDir: REPLAY_LIBRARY_DIR,
     limit: null,
+    concurrency: DEFAULT_CONCURRENCY,
   };
 
   for (const arg of argv) {
@@ -26,6 +29,9 @@ function parseArgs(argv) {
     else if (arg.startsWith("--limit=")) {
       const limit = Number(arg.slice("--limit=".length));
       if (Number.isInteger(limit) && limit > 0) args.limit = limit;
+    } else if (arg.startsWith("--concurrency=")) {
+      const concurrency = Number(arg.slice("--concurrency=".length));
+      if (Number.isInteger(concurrency) && concurrency > 0) args.concurrency = concurrency;
     }
   }
 
@@ -106,25 +112,28 @@ async function copyReplayIntoAppFolder(sourcePath, replayId) {
   return targetPath;
 }
 
-function runPipeline(replayPath) {
-  return new Promise((resolve, reject) => {
-    const child = spawn(
-      process.execPath,
-      [path.join(BACKEND_DIR, "src", "pipeline", "analyzeReplay.js"), replayPath],
-      { cwd: BACKEND_DIR, stdio: "inherit" },
-    );
-
-    child.on("error", reject);
-    child.on("close", (code) => {
-      if (code === 0) resolve();
-      else reject(new Error(`analyzeReplay.js exited with code ${code}`));
-    });
-  });
-}
-
 async function getReplayId(replayPath) {
   const parsed = await parseReplayHeader(replayPath);
   return parsed?.properties?.Id ?? null;
+}
+
+async function processWithConcurrency(items, fn, concurrency) {
+  let index = 0;
+  const results = new Array(items.length);
+
+  async function worker() {
+    while (index < items.length) {
+      const i = index++;
+      try {
+        results[i] = { status: "fulfilled", value: await fn(items[i], i) };
+      } catch (err) {
+        results[i] = { status: "rejected", reason: err };
+      }
+    }
+  }
+
+  await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, worker));
+  return results;
 }
 
 async function main() {
@@ -147,18 +156,18 @@ async function main() {
 
   console.log("Epic replay source:", options.sourceDir);
   console.log("App replay copy target:", options.noCopy ? "(disabled)" : REPLAYS_DIR);
-  console.log(`Found ${replayFiles.length} replay(s). Processing ${selectedFiles.length}.`);
+  console.log(`Found ${replayFiles.length} replay(s). Processing ${selectedFiles.length} with concurrency ${options.concurrency}.`);
   if (options.dryRun) console.log("Dry run enabled - no analysis will be run.\n");
   else console.log("");
 
-  let imported = 0;
+  let completed = 0;
   let skipped = 0;
   let failed = 0;
 
-  for (let index = 0; index < selectedFiles.length; index++) {
-    const sourcePath = selectedFiles[index];
+  await processWithConcurrency(selectedFiles, async (sourcePath, arrayIndex) => {
     const fileName = path.basename(sourcePath);
-    const progress = `[${index + 1}/${selectedFiles.length}]`;
+    const displayIndex = arrayIndex + 1;
+    const total = selectedFiles.length;
 
     try {
       const replayId = await getReplayId(sourcePath);
@@ -172,9 +181,9 @@ async function main() {
       });
 
       if (existing && !options.force) {
-        console.log(`${progress} Already in DB - skipping ${fileName} (${replayId})`);
+        console.log(`[${displayIndex}/${total}] Already in DB — skipping ${fileName}`);
         skipped++;
-        continue;
+        return;
       }
 
       const replayPath = options.noCopy
@@ -182,21 +191,24 @@ async function main() {
         : await copyReplayIntoAppFolder(sourcePath, replayId);
 
       if (options.dryRun) {
-        console.log(`${progress} Would import ${fileName} as ${path.basename(replayPath)} (${replayId})`);
+        console.log(`[${displayIndex}/${total}] Would import ${fileName} (${replayId})`);
         skipped++;
-        continue;
+        return;
       }
 
-      console.log(`${progress} Importing ${fileName} (${replayId})...`);
-      await runPipeline(replayPath);
-      imported++;
+      console.log(`[${displayIndex}/${total}] Importing ${fileName}...`);
+      const start = Date.now();
+      await runPipeline(replayPath, { skipDiscord: true, silent: true });
+      const elapsed = ((Date.now() - start) / 1000).toFixed(1);
+      completed++;
+      console.log(`[${displayIndex}/${total}] ✓ ${fileName} (${elapsed}s)`);
     } catch (error) {
       failed++;
-      console.error(`${progress} FAILED ${fileName}: ${error.message}`);
+      console.error(`[${displayIndex}/${total}] ✗ ${fileName}: ${error.message}`);
     }
-  }
+  }, options.concurrency);
 
-  console.log(`\nEpic replay seed complete: ${imported} imported, ${skipped} skipped, ${failed} failed.`);
+  console.log(`\nEpic replay seed complete: ${completed} imported, ${skipped} skipped, ${failed} failed.`);
 }
 
 main()
